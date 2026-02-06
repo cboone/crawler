@@ -5,7 +5,8 @@ screen looks exactly like a saved reference. Instead of writing individual
 assertions for each piece of text, you capture the entire screen and compare it
 against a committed file.
 
-For API signatures, see `go doc github.com/cboone/crawler`.
+For API overview and usage examples, see the [README](../README.md). For
+detailed function signatures, see `go doc github.com/cboone/crawler`.
 
 ## When to use snapshots
 

@@ -3,6 +3,9 @@
 How crawler works internally. This guide is for contributors and users who want
 to understand what happens behind the API.
 
+For API overview and usage examples, see the [README](../README.md). For
+detailed function signatures, see `go doc github.com/cboone/crawler`.
+
 ## Why tmux
 
 Testing TUIs requires a real terminal environment: the program under test reads

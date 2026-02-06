@@ -2,6 +2,9 @@
 
 Debugging test failures, fixing common problems, and setting up CI.
 
+For API overview and usage examples, see the [README](../README.md). For
+detailed function signatures, see `go doc github.com/cboone/crawler`.
+
 ## tmux not found
 
 If tmux is not installed, tests **skip** automatically (they don't fail):
@@ -202,7 +205,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "feature/**"
   pull_request:
 
 jobs:

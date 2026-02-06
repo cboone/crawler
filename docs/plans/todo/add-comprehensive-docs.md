@@ -10,7 +10,7 @@ Create 6 Markdown files in `docs/` and update the root `README.md` to link to th
 
 ### Files to create
 
-#### 1. `docs/getting-started.md` — First-test tutorial
+#### 1. `docs/GETTING-STARTED.md` — First-test tutorial
 
 Walk a new user from zero to a working test. Not a reference (that's the README) but a narrative walkthrough.
 
@@ -22,7 +22,7 @@ Walk a new user from zero to a working test. Not a reference (that's the README)
 - Configuring the session: `WithSize`, `WithTimeout`, `WithPollInterval`, `WithEnv`, `WithArgs`, `WithDir`, with defaults table (80x24, 5s timeout, 50ms poll interval)
 - Next steps: links to the other guides
 
-#### 2. `docs/matchers.md` — Matchers in depth
+#### 2. `docs/MATCHERS.md` — Matchers in depth
 
 Cover the matcher system, all built-ins, composition, and custom matchers.
 
@@ -35,7 +35,7 @@ Cover the matcher system, all built-ins, composition, and custom matchers.
 - Writing custom matchers: 3 practical examples (region checker, occurrence counter, multi-line table assertion). Since `Matcher` is a public `func` type, users just write a function
 - Matcher descriptions and error readability
 
-#### 3. `docs/snapshots.md` — Snapshot testing guide
+#### 3. `docs/SNAPSHOTS.md` — Snapshot testing guide
 
 Deep dive into golden-file testing.
 
@@ -52,7 +52,7 @@ Deep dive into golden-file testing.
 - Organizing snapshots: naming conventions, checking into version control
 - CI considerations: never run with `CRAWLER_UPDATE=1` in CI
 
-#### 4. `docs/patterns.md` — Recipes and testing patterns
+#### 4. `docs/PATTERNS.md` — Recipes and testing patterns
 
 Cookbook of common scenarios with complete examples.
 
@@ -70,7 +70,7 @@ Cookbook of common scenarios with complete examples.
 - `WaitForScreen` for follow-up assertions: capture the matching screen, then inspect it
 - `SendKeys` as an escape hatch: when `Type`/`Press` aren't sufficient, send raw tmux key sequences
 
-#### 5. `docs/troubleshooting.md` — Debugging and CI setup
+#### 5. `docs/TROUBLESHOOTING.md` — Debugging and CI setup
 
 Help users diagnose problems and set up CI.
 
@@ -85,7 +85,7 @@ Help users diagnose problems and set up CI.
 - CI with other providers: general guidance (just need tmux 3.0+ available)
 - Debugging tips: `go test -run TestName -v`, `CRAWLER_TMUX` for specific tmux builds
 
-#### 6. `docs/architecture.md` — How it works
+#### 6. `docs/ARCHITECTURE.md` — How it works
 
 For contributors and users who want to understand internals.
 
