@@ -356,8 +356,8 @@ func WithPollInterval(d time.Duration) WaitOption
 
 Wait option semantics:
 
-- Defaults come from terminal options (`WithTimeout`, `WithPollInterval`),
-  or library defaults (5s timeout, 50ms poll interval).
+- Defaults come from terminal options (e.g. `WithTimeout`) or, if unset,
+  from library defaults (5s timeout, 50ms poll interval).
 - `WithinTimeout(0)` and `WithPollInterval(0)` mean "use defaults".
 - Negative values are invalid and cause an immediate `t.Fatal`.
 - Positive poll intervals under 10ms are clamped to 10ms to prevent busy-loop
