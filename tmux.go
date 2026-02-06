@@ -180,16 +180,6 @@ func startSession(runner *tmuxcli.Runner, binary string, opts options) error {
 	return nil
 }
 
-// setSessionEnv sets environment variables on the tmux session.
-func setSessionEnv(runner *tmuxcli.Runner, env []string) error {
-	for _, e := range env {
-		if _, err := runner.Run("set-environment", e); err != nil {
-			return fmt.Errorf("crawler: open: failed to set environment: %w", err)
-		}
-	}
-	return nil
-}
-
 // capturePaneContent captures the visible pane content.
 func capturePaneContent(runner *tmuxcli.Runner, pane string) (string, error) {
 	return runner.Run("capture-pane", "-p", "-t", pane)

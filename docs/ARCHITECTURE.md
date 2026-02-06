@@ -201,7 +201,7 @@ write `if err != nil` for crawler calls. Errors format as
   TUIs cannot be tested with crawler.
 - **No multi-pane**: each test uses a single pane. Testing multi-pane layouts
   is not supported.
-- **No Windows**: tmux does not run on Windows. Tests on Windows will skip.
+- **No Windows**: tmux does not run on Windows. Tests are not supported on Windows and may fail to build.
 
 ## See also
 
