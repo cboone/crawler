@@ -20,6 +20,8 @@ type Terminal struct {
 	opts       options
 }
 
+const failureCaptureHistory = 3
+
 // Open starts the binary in a new tmux session.
 // Cleanup is automatic via t.Cleanup — no defer needed.
 func Open(t testing.TB, binary string, userOpts ...Option) *Terminal {
@@ -212,18 +214,20 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 
 	deadline := time.Now().Add(timeout)
 	var lastScreen *Screen
-	var lastDesc string
+	lastDesc := "matcher condition"
+	recentScreens := make([]*Screen, 0, failureCaptureHistory)
 
 	for {
 		// Check if pane is dead.
 		state, err := getPaneState(term.runner, term.pane)
 		if err == nil && state.dead {
 			lastScreen = term.captureScreenRaw()
+			recentScreens = appendRecentScreens(recentScreens, lastScreen, failureCaptureHistory)
 			if lastScreen != nil {
 				_, lastDesc = m(lastScreen)
 			}
-			term.t.Fatalf("crawler: wait-for: process exited unexpectedly (status %d)\n    waiting for: %s\n    last screen capture:\n%s",
-				state.exitStatus, lastDesc, formatScreenBox(lastScreen))
+			term.t.Fatalf("crawler: wait-for: process exited unexpectedly (status %d)\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
+				state.exitStatus, lastDesc, formatRecentScreens(recentScreens))
 		}
 
 		raw, captureErr := capturePaneContent(term.runner, term.pane)
@@ -238,6 +242,7 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 			lastScreen.cursorRow = row
 			lastScreen.cursorCol = col
 		}
+		recentScreens = appendRecentScreens(recentScreens, lastScreen, failureCaptureHistory)
 
 		ok, desc := m(lastScreen)
 		lastDesc = desc
@@ -246,8 +251,8 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 		}
 
 		if time.Now().After(deadline) {
-			term.t.Fatalf("crawler: wait-for: timed out after %v\n    waiting for: %s\n    last screen capture:\n%s",
-				timeout, lastDesc, formatScreenBox(lastScreen))
+			term.t.Fatalf("crawler: wait-for: timed out after %v\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
+				timeout, lastDesc, formatRecentScreens(recentScreens))
 		}
 
 		time.Sleep(pollInterval)
@@ -282,6 +287,7 @@ func (term *Terminal) WaitExit(wopts ...WaitOption) int {
 	}
 
 	deadline := time.Now().Add(timeout)
+	recentScreens := make([]*Screen, 0, failureCaptureHistory)
 	for {
 		state, err := getPaneState(term.runner, term.pane)
 		if err != nil {
@@ -290,10 +296,10 @@ func (term *Terminal) WaitExit(wopts ...WaitOption) int {
 		if state.dead {
 			return state.exitStatus
 		}
+		recentScreens = appendRecentScreens(recentScreens, term.captureScreenRaw(), failureCaptureHistory)
 		if time.Now().After(deadline) {
-			lastScreen := term.captureScreenRaw()
-			term.t.Fatalf("crawler: wait-exit: timed out after %v\n    pane still alive\n    last screen capture:\n%s",
-				timeout, formatScreenBox(lastScreen))
+			term.t.Fatalf("crawler: wait-exit: timed out after %v\n    pane still alive\n    recent screen captures (oldest to newest):\n%s",
+				timeout, formatRecentScreens(recentScreens))
 		}
 		time.Sleep(pollInterval)
 	}
@@ -351,6 +357,32 @@ func (term *Terminal) requireAlive(op string) {
 	if state.dead {
 		term.t.Fatalf("crawler: %s: process exited unexpectedly (status %d)", op, state.exitStatus)
 	}
+}
+
+func appendRecentScreens(screens []*Screen, scr *Screen, max int) []*Screen {
+	if scr == nil {
+		return screens
+	}
+	screens = append(screens, scr)
+	if len(screens) > max {
+		screens = screens[len(screens)-max:]
+	}
+	return screens
+}
+
+func formatRecentScreens(screens []*Screen) string {
+	if len(screens) == 0 {
+		return "    (no screen captured)"
+	}
+
+	var b strings.Builder
+	for i, scr := range screens {
+		fmt.Fprintf(&b, "    capture %d/%d:\n%s", i+1, len(screens), formatScreenBox(scr))
+		if i < len(screens)-1 {
+			b.WriteByte('\n')
+		}
+	}
+	return b.String()
 }
 
 // formatScreenBox formats a screen capture with a box border for error messages.

@@ -1,34 +1,88 @@
-// Package crawler is a Go testing library for black-box testing of terminal
-// user interfaces. It is framework-agnostic: it tests any TUI binary
-// (bubbletea, tview, tcell, Python curses, Rust ratatui, raw ANSI programs)
-// by running it inside a tmux session, sending keystrokes, capturing screen
-// output, and asserting against it.
+// Package crawler provides black-box testing for terminal user interfaces.
 //
-// # Quick start
+// crawler runs a real binary inside an isolated tmux server, sends keystrokes,
+// captures screen output, and performs assertions through the standard
+// [testing.TB] interface. It is framework-agnostic and works with any program
+// that renders in a terminal.
 //
-// A minimal test:
+// # Quick Start
 //
 //	func TestMyApp(t *testing.T) {
-//	    term := crawler.Open(t, "./my-app")
-//	    term.WaitFor(crawler.Text("Welcome"))
-//	    term.Type("hello")
-//	    term.Press(crawler.Enter)
-//	    term.WaitFor(crawler.Text("hello"))
+//		term := crawler.Open(t, "./my-app")
+//		term.WaitFor(crawler.Text("Welcome"))
+//		term.Type("hello")
+//		term.Press(crawler.Enter)
+//		term.WaitFor(crawler.Text("hello"))
 //	}
 //
-// # Key concepts
+// Cleanup is automatic through t.Cleanup; there is no Close method.
 //
-//   - [Open] starts a binary in a new, isolated tmux session. Cleanup is
-//     automatic via t.Cleanup.
-//   - [Terminal.WaitFor] polls the screen until a [Matcher] succeeds or a
-//     timeout expires, providing reliable waits without time.Sleep.
-//   - [Terminal.Screen] captures the current visible content as a [Screen].
-//   - [Terminal.Type] and [Terminal.Press] send input to the running program.
-//   - [Terminal.MatchSnapshot] compares the screen against a golden file.
+// # Session Lifecycle
+//
+// [Open] creates a dedicated tmux server for each test, using a unique socket
+// path under os.TempDir. This gives subtests and parallel tests full isolation.
+//
+// Internally, crawler starts tmux with a temporary config file that enables:
+//
+//   - remain-on-exit on
+//   - status off
+//   - deterministic history-limit
+//
+// The tmux server is torn down with kill-server during cleanup.
+//
+// # Waiting and Matchers
+//
+// [Terminal.WaitFor] and [Terminal.WaitForScreen] poll until a [Matcher]
+// succeeds or a timeout expires. This is the core reliability mechanism and
+// avoids ad hoc sleeps in tests.
+//
+// Wait behavior:
+//
+//   - Defaults: 5s timeout, 50ms poll interval
+//   - Per-terminal overrides: [WithTimeout], [WithPollInterval]
+//   - Per-call overrides: [WithinTimeout], [WithWaitPollInterval]
+//   - Poll intervals under 10ms are clamped to 10ms
+//   - Negative timeout or poll values fail the test immediately
+//   - If the process exits early, waits fail immediately with diagnostics
+//
+// Built-in matchers include [Text], [Regexp], [Line], [LineContains], [Not],
+// [All], [Any], [Empty], and [Cursor].
+//
+// # Screen Capture
+//
+// [Terminal.Screen] captures the visible pane. [Terminal.Scrollback] captures
+// full scrollback history. A [Screen] is immutable and provides helpers such as
+// [Screen.String], [Screen.Lines], [Screen.Line], [Screen.Contains], and
+// [Screen.Size].
+//
+// # Snapshots
+//
+// [Terminal.MatchSnapshot] and [Screen.MatchSnapshot] compare screen content to
+// golden files under testdata. Set CRAWLER_UPDATE=1 to create or update golden
+// files.
+//
+// Snapshot content is normalized for stable diffs by trimming trailing spaces,
+// trimming trailing blank lines, and writing a single trailing newline.
+//
+// # Diagnostics
+//
+// On wait failures, crawler reports:
+//
+//   - expected matcher description
+//   - timeout or exit details
+//   - multiple recent screen captures (oldest to newest)
+//
+// This keeps failures actionable without extra debug tooling.
 //
 // # Requirements
 //
-// tmux 3.0+ must be installed and available in $PATH (or configured via
-// [WithTmuxPath] or the CRAWLER_TMUX environment variable).
-// Only Unix-like systems (Linux, macOS) are supported.
+//   - Go 1.24+
+//   - tmux 3.0+
+//   - Linux or macOS
+//
+// tmux is resolved in this order:
+//
+//   - [WithTmuxPath]
+//   - CRAWLER_TMUX
+//   - PATH lookup for tmux
 package crawler

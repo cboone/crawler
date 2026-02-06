@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,11 @@ import (
 )
 
 var testBinary string
+
+const (
+	waitForTimeoutHelperEnv  = "CRAWLER_WAITFOR_TIMEOUT_HELPER"
+	waitExitTimeoutHelperEnv = "CRAWLER_WAITEXIT_TIMEOUT_HELPER"
+)
 
 func TestMain(m *testing.M) {
 	// Build the test fixture binary.
@@ -65,12 +71,34 @@ func TestWaitForSuccess(t *testing.T) {
 }
 
 func TestWaitForTimeout(t *testing.T) {
-	// Use a mock testing.TB to verify t.Fatal is called on timeout.
-	// Instead, we just test with a very short timeout to verify the timeout
-	// mechanism works. We can't easily test t.Fatal without a subprocess.
-	// Instead, test that WaitFor succeeds with matching content.
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"), crawler.WithinTimeout(10*time.Second))
+	if os.Getenv(waitForTimeoutHelperEnv) == "1" {
+		term := crawler.Open(t, testBinary)
+		term.WaitFor(crawler.Text("ready>"))
+		term.WaitFor(crawler.Text("never appears"), crawler.WithinTimeout(150*time.Millisecond))
+		return
+	}
+
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("tmux not found in PATH")
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run", "^TestWaitForTimeout$")
+	cmd.Env = append(os.Environ(), waitForTimeoutHelperEnv+"=1")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected subprocess to fail, output:\n%s", string(out))
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "crawler: wait-for: timed out") {
+		t.Fatalf("expected timeout message, got:\n%s", output)
+	}
+	if !strings.Contains(output, "recent screen captures (oldest to newest):") {
+		t.Fatalf("expected recent captures header, got:\n%s", output)
+	}
+	if !regexp.MustCompile(`capture [0-9]+/[0-9]+:`).MatchString(output) {
+		t.Fatalf("expected numbered captures, got:\n%s", output)
+	}
 }
 
 func TestWaitForScreen(t *testing.T) {
@@ -235,6 +263,34 @@ func TestWaitExitNonZero(t *testing.T) {
 	}
 }
 
+func TestWaitExitTimeout(t *testing.T) {
+	if os.Getenv(waitExitTimeoutHelperEnv) == "1" {
+		term := crawler.Open(t, testBinary)
+		term.WaitFor(crawler.Text("ready>"))
+		_ = term.WaitExit(crawler.WithinTimeout(150 * time.Millisecond))
+		return
+	}
+
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("tmux not found in PATH")
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run", "^TestWaitExitTimeout$")
+	cmd.Env = append(os.Environ(), waitExitTimeoutHelperEnv+"=1")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected subprocess to fail, output:\n%s", string(out))
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "crawler: wait-exit: timed out") {
+		t.Fatalf("expected wait-exit timeout message, got:\n%s", output)
+	}
+	if !strings.Contains(output, "recent screen captures (oldest to newest):") {
+		t.Fatalf("expected recent captures header, got:\n%s", output)
+	}
+}
+
 func TestResize(t *testing.T) {
 	term := crawler.Open(t, testBinary, crawler.WithSize(80, 24))
 	term.WaitFor(crawler.Text("ready>"))
@@ -373,10 +429,7 @@ func TestStressParallel(t *testing.T) {
 func TestCursorMatcher(t *testing.T) {
 	term := crawler.Open(t, testBinary)
 	term.WaitFor(crawler.Text("ready>"))
-
-	// After "ready>" prompt, cursor should be at row 0, col 6.
-	screen := term.Screen()
-	_ = screen // Cursor position depends on tmux, just test it doesn't crash.
+	term.WaitFor(crawler.Cursor(0, 6))
 }
 
 func TestSendKeys(t *testing.T) {

@@ -28,8 +28,7 @@ output, and assert against it — all through the standard `testing.TB` interfac
 
 ## Constraints
 
-- **Minimum Go version**: 1.21+ (for `testing.TB` improvements and `slices` if
-  needed from stdlib).
+- **Minimum Go version**: 1.24+.
 - **Minimum tmux version**: 3.0+ (released November 2019). Covers all needed
   features including `capture-pane -p`, `resize-window`, and `list-panes`
   format strings. Checked at runtime in `Open`.
@@ -639,15 +638,15 @@ overridden via a `WithHistoryLimit(limit int)` option if needed.
 
 Minimum viable library. Enough to write real tests.
 
-- [ ] `go.mod` initialization
-- [ ] `internal/tmuxcli` — execute tmux commands, manage socket paths
-- [ ] `Terminal` type with `Open` and `t.Cleanup` teardown
-- [ ] `SendKeys`, `Type`, `Press` with key constants
-- [ ] `Screen` type with `capture-pane` integration
-- [ ] `Screen.Contains`, `Screen.String`, `Screen.Lines`, `Screen.Line`
-- [ ] `WaitFor` with polling, timeout, and clear failure messages
-- [ ] `Text` and `Regexp` matchers
-- [ ] Basic integration tests (test the library against a small TUI program)
+- [x] `go.mod` initialization
+- [x] `internal/tmuxcli` — execute tmux commands, manage socket paths
+- [x] `Terminal` type with `Open` and `t.Cleanup` teardown
+- [x] `SendKeys`, `Type`, `Press` with key constants
+- [x] `Screen` type with `capture-pane` integration
+- [x] `Screen.Contains`, `Screen.String`, `Screen.Lines`, `Screen.Line`
+- [x] `WaitFor` with polling, timeout, and clear failure messages
+- [x] `Text` and `Regexp` matchers
+- [x] Basic integration tests (test the library against a small TUI program)
 
 **Phase 1 acceptance criteria**: A user can write a test that opens a real
 binary, sends keystrokes, waits for screen content, and asserts against it.
@@ -662,24 +661,24 @@ All of the following pass:
 
 ### Phase 2: Matchers and snapshots
 
-- [ ] `Line`, `LineContains`, `Not`, `All`, `Any`, `Empty` matchers
-- [ ] `MatchSnapshot` with golden file creation and `CRAWLER_UPDATE` env var
-- [ ] `Resize`
-- [ ] `WaitExit` (process exit)
-- [ ] `WaitForScreen` (return the matching screen; trivial wrapper over `WaitFor`)
-- [ ] `Scrollback`
-- [ ] More key constants (function keys, Alt combos)
+- [x] `Line`, `LineContains`, `Not`, `All`, `Any`, `Empty` matchers
+- [x] `MatchSnapshot` with golden file creation and `CRAWLER_UPDATE` env var
+- [x] `Resize`
+- [x] `WaitExit` (process exit)
+- [x] `WaitForScreen` (return the matching screen; trivial wrapper over `WaitFor`)
+- [x] `Scrollback`
+- [x] More key constants (function keys, Alt combos)
 
 ### Phase 3: Polish
 
-- [ ] `Cursor` matcher (cursor position via `tmux display-message`)
-- [ ] Diagnostic output: on failure, dump last N screen captures
-- [ ] Parallel test documentation and testing
-- [ ] CI setup (GitHub Actions with tmux installed)
-- [ ] `tmux` version detection and minimum version check
-- [ ] Comprehensive `go doc` documentation
-- [ ] Example tests in `example_test.go` (shown by `go doc`)
-- [ ] README with usage guide
+- [x] `Cursor` matcher (cursor position via `tmux display-message`)
+- [x] Diagnostic output: on failure, dump last N screen captures
+- [x] Parallel test documentation and testing
+- [x] CI setup (GitHub Actions with tmux installed)
+- [x] `tmux` version detection and minimum version check
+- [x] Comprehensive `go doc` documentation
+- [x] Example tests in `example_test.go` (shown by `go doc`)
+- [x] README with usage guide
 
 ---
 

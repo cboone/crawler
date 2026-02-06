@@ -96,15 +96,25 @@ screen := term.WaitForScreen(crawler.Text("Results"))
 
 // Override timeout for a single call
 term.WaitFor(crawler.Text("Done"), crawler.WithinTimeout(30*time.Second))
+
+// Override poll interval for a single call
+term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(100*time.Millisecond))
 ```
 
 On timeout, `WaitFor` calls `t.Fatal` with a diagnostic message showing what
-was expected and the last screen capture:
+was expected and the most recent screen captures:
 
 ```
 terminal_test.go:42: WaitFor timed out after 5s
     waiting for: screen to contain "Loading complete"
-    last screen capture:
+    recent screen captures (oldest to newest):
+    capture 1/2:
+    +--------------------------------------------------------------------------------+
+    | My Application v1.0                                                            |
+    |                                                                                |
+    | Loading...                                                                     |
+    +--------------------------------------------------------------------------------+
+    capture 2/2:
     +--------------------------------------------------------------------------------+
     | My Application v1.0                                                            |
     |                                                                                |
