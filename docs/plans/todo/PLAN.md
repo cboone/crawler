@@ -10,7 +10,7 @@ output, and assert against it — all through the standard `testing.TB` interfac
 
 1. **Framework-agnostic**: Test any TUI binary (bubbletea, tview, tcell,
    Python curses, Rust ratatui, raw ANSI programs — anything).
-2. **Go-native API**: First-class integration with `*testing.T`, subtests,
+2. **Go-native API**: First-class integration with `testing.TB`, subtests,
    table-driven tests, `t.Helper()`, `t.Cleanup()`. No DSLs.
 3. **Reliable**: Deterministic waits instead of `time.Sleep`. Automatic retry
    with timeouts, like Playwright's auto-waiting locators.
@@ -99,9 +99,12 @@ crawler/
 ├── tmux.go                 # Package-level tmux session helpers (unexported); thin adapter over internal/tmuxcli
 ├── doc.go                  # Package documentation
 ├── internal/
-│   └── tmuxcli/
-│       ├── tmuxcli.go      # Low-level tmux command execution and socket-path management (used only by tmux.go)
-│       └── tmuxcli_test.go
+│   ├── tmuxcli/
+│   │   ├── tmuxcli.go      # Low-level tmux command execution and socket-path management (used only by tmux.go)
+│   │   └── tmuxcli_test.go
+│   └── testbin/
+│       ├── main.go          # Raw ANSI + stdin loop fixture program (test-only)
+│       └── testbin_test.go  # Build in TestMain, run integration tests against it
 └── testdata/               # Golden files for the library's own tests
     └── ...
 ```
@@ -226,7 +229,9 @@ Socket files are explicitly placed under `os.TempDir()`. The
 `<sanitized-test>` component is derived from the test name but cleaned so it
 contains only filesystem-safe characters (for example, replacing `/` from
 subtest names with `_`) and never introduces subdirectories.
-`Open` removes any stale socket file before starting tmux if the path exists.
+If a socket file already exists at the generated path, `Open` treats it as a
+collision: it generates a new unique path rather than removing the existing
+socket (which could belong to a live tmux server).
 
 ### Sending input
 
@@ -608,6 +613,12 @@ until the targeted pane is marked dead, then return the status.
 
 ```go
 // Scrollback captures the full scrollback buffer, not just the visible screen.
+//
+// The returned Screen has one line per scrollback row (oldest to newest).
+// Its height (and len(Lines())) reflects the total number of captured lines,
+// which is typically larger than the pane's visible height. Width is the
+// maximum line width across all captured lines. Callers should use
+// len(s.Lines()) rather than s.Height to reason about scrollback length.
 func (term *Terminal) Scrollback() *Screen
 ```
 
