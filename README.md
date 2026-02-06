@@ -191,6 +191,15 @@ func TestNavigation(t *testing.T) {
 }
 ```
 
+## Documentation
+
+- [Getting started](docs/getting-started.md) -- first-test tutorial
+- [Matchers in depth](docs/matchers.md) -- all built-in matchers, composition, and custom matchers
+- [Snapshot testing](docs/snapshots.md) -- golden-file testing guide
+- [Recipes and patterns](docs/patterns.md) -- common testing scenarios with complete examples
+- [Troubleshooting](docs/troubleshooting.md) -- debugging failures and CI setup
+- [Architecture](docs/architecture.md) -- how crawler works under the hood
+
 ## Requirements
 
 - **Go** 1.24+
