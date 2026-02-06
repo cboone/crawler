@@ -96,11 +96,11 @@ crawler/
 ├── keys.go                 # Key constants and SendKeys helpers
 ├── match.go                # Matchers: Text, Regexp, Line, etc.
 ├── snapshot.go             # Golden-file snapshot support
-├── tmux.go                 # Low-level tmux CLI wrapper (unexported)
+├── tmux.go                 # Package-level tmux session helpers (unexported); thin adapter over internal/tmuxcli
 ├── doc.go                  # Package documentation
 ├── internal/
 │   └── tmuxcli/
-│       ├── tmuxcli.go      # tmux command execution, socket-path management
+│       ├── tmuxcli.go      # Low-level tmux command execution and socket-path management (used only by tmux.go)
 │       └── tmuxcli_test.go
 └── testdata/               # Golden files for the library's own tests
     └── ...
@@ -332,7 +332,9 @@ if !screen.Contains("Welcome") {
 // and the last screen content.
 func (term *Terminal) WaitFor(m Matcher, opts ...WaitOption)
 
-// WaitForScreen is like WaitFor but returns the matching Screen.
+// WaitForScreen has the same timeout behavior as WaitFor: it polls until the
+// matcher succeeds or the timeout expires, calling t.Fatal on timeout. On
+// success it returns the matching Screen.
 func (term *Terminal) WaitForScreen(m Matcher, opts ...WaitOption) *Screen
 ```
 
@@ -400,7 +402,8 @@ func Text(s string) Matcher
 // Regexp matches if the screen content matches the regular expression.
 func Regexp(pattern string) Matcher
 
-// Line matches if the given line (0-indexed) exactly equals s (trimmed).
+// Line matches if the given line (0-indexed) equals s after trimming
+// trailing spaces from the screen line.
 func Line(n int, s string) Matcher
 
 // LineContains matches if the given line contains the substring.
@@ -420,6 +423,8 @@ func Empty() Matcher
 
 // Cursor matches if the cursor is at the given position.
 // Uses tmux display-message -p -t <pane> '#{cursor_x} #{cursor_y}'.
+// Note: tmux reports cursor position as (x, y) = (col, row), but this
+// matcher takes (row, col) to follow the usual row-then-column convention.
 func Cursor(row, col int) Matcher
 ```
 
@@ -451,7 +456,8 @@ Golden files are plain text — easy to review in diffs.
 
 Snapshot paths are sanitized to avoid collisions and invalid paths:
 
-- Base directory uses full `t.Name()` plus a short stable hash.
+- Base directory uses full `t.Name()` plus a short stable hash of the full
+  test name (ensures path uniqueness while remaining stable across runs).
 - `/` in subtest names is replaced to keep one directory level.
 - Whitespace becomes `_`; characters outside `[A-Za-z0-9._-]` become `_`.
 - Snapshot `name` is sanitized with the same character rules.
@@ -602,7 +608,8 @@ of history).
 
 Scrollback is bounded by tmux `history-limit`; it is not infinite.
 To reduce environment variance, `Open` sets `history-limit` for the test
-session to a fixed value (for example `10000`).
+session to a deterministic default value (for example `10000`), which can be
+overridden via a `WithHistoryLimit(limit int)` option if needed.
 
 ---
 
@@ -689,8 +696,10 @@ Dependency policy:
   `t.Skip("crawler: open: tmux not found")`.
 - If `WithTmuxPath` or `CRAWLER_TMUX` is set but invalid or not executable,
   call `t.Fatal` (explicit configuration error).
-- If tmux is found but version is below 3.0, call `t.Skip` with the detected
-  version and required minimum.
+- If tmux is found via `$PATH` but version is below 3.0, call `t.Skip` with
+  the detected version and required minimum (environment limitation).
+- If tmux is found via `WithTmuxPath` or `CRAWLER_TMUX` but version is below
+  3.0, call `t.Fatal` (explicit configuration error: unsupported tmux).
 
 **Go module dependencies**: Ideally zero. The standard library provides
 everything needed:
