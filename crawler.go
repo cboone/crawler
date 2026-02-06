@@ -230,17 +230,9 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 				state.exitStatus, lastDesc, formatRecentScreens(recentScreens))
 		}
 
-		raw, captureErr := capturePaneContent(term.runner, term.pane)
-		if captureErr != nil {
-			term.t.Fatalf("crawler: wait-for: capture failed: %v", captureErr)
-		}
-
-		lastScreen = newScreen(raw, term.opts.width, term.opts.height)
-		// Fetch cursor for cursor matchers.
-		row, col, cursorErr := getCursorPosition(term.runner, term.pane)
-		if cursorErr == nil {
-			lastScreen.cursorRow = row
-			lastScreen.cursorCol = col
+		lastScreen = term.captureScreenRaw()
+		if lastScreen == nil {
+			term.t.Fatalf("crawler: wait-for: capture failed")
 		}
 		recentScreens = appendRecentScreens(recentScreens, lastScreen, failureCaptureHistory)
 

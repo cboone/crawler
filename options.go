@@ -36,7 +36,7 @@ func WithSize(width, height int) Option {
 // Each entry should be in "KEY=VALUE" format.
 func WithEnv(env ...string) Option {
 	return func(o *options) {
-		o.env = env
+		o.env = append(o.env, env...)
 	}
 }
 
