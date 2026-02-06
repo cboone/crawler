@@ -171,7 +171,7 @@ scrollback := term.Scrollback()
 
 ## Subtests and parallel tests
 
-Each call to `Open` creates an isolated tmux session with its own socket path.
+Each call to `Open` starts a dedicated tmux server with its own socket path and creates a new session within it.
 Subtests and `t.Parallel()` work naturally:
 
 ```go

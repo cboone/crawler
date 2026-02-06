@@ -103,6 +103,9 @@ func Empty() Matcher {
 func Cursor(row, col int) Matcher {
 	return func(scr *Screen) (bool, string) {
 		desc := fmt.Sprintf("cursor at row=%d, col=%d", row, col)
+		if scr.cursorRow < 0 || scr.cursorCol < 0 {
+			return false, desc + " (cursor position unavailable)"
+		}
 		if scr.cursorRow == row && scr.cursorCol == col {
 			return true, desc
 		}

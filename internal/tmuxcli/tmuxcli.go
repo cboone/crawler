@@ -33,13 +33,15 @@ func (r *Runner) SetConfigPath(path string) {
 }
 
 // Run executes a tmux command with the given arguments and returns its
-// combined stdout output. If the command fails, it returns an error
-// containing stderr.
+// standard output. If the command fails, it returns an error containing
+// the captured standard error output.
 func (r *Runner) Run(args ...string) (string, error) {
 	return r.RunContext(context.Background(), args...)
 }
 
-// RunContext executes a tmux command with the given context and arguments.
+// RunContext executes a tmux command with the given context and arguments,
+// returning the command's standard output. On failure, it returns an error
+// that includes the captured standard error output.
 func (r *Runner) RunContext(ctx context.Context, args ...string) (string, error) {
 	var fullArgs []string
 	if r.configPath != "" {

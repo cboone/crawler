@@ -302,8 +302,6 @@ func TestResize(t *testing.T) {
 
 	// Resize.
 	term.Resize(120, 40)
-	// Give the program a moment to receive SIGWINCH.
-	time.Sleep(200 * time.Millisecond)
 
 	// Ask for size again.
 	term.Type("size")

@@ -47,7 +47,9 @@ testdata/           Golden files for snapshot tests (created by CRAWLER_UPDATE=1
   session start, so fast-exiting processes still report exit codes.
 - `status off` disables the tmux status bar so terminal dimensions match the
   requested size exactly.
-- Screen captures always include cursor position for the `Cursor` matcher.
+- Screen captures include cursor position on a best-effort basis for the
+  `Cursor` matcher. If `display-message` fails, cursor fields use sentinel
+  values (-1) and the `Cursor` matcher reports "cursor position unavailable."
 - Socket paths include a sanitized test name and random suffix, truncated to
   stay within Unix socket path limits.
 

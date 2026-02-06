@@ -27,10 +27,12 @@ func newScreen(raw string, width, height int) *Screen {
 	lines := strings.Split(raw, "\n")
 
 	return &Screen{
-		lines:  lines,
-		raw:    raw,
-		width:  width,
-		height: height,
+		lines:     lines,
+		raw:       raw,
+		width:     width,
+		height:    height,
+		cursorRow: -1,
+		cursorCol: -1,
 	}
 }
 
