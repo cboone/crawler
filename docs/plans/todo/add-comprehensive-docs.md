@@ -6,7 +6,7 @@ The crawler library has good inline documentation (README, `doc.go`, `example_te
 
 ## Plan
 
-Create 6 Markdown files in `docs/`. Each expands on topics the README covers briefly, without duplicating it.
+Create 6 Markdown files in `docs/` and update the root `README.md` to link to them. Each guide expands on topics the README covers briefly, without duplicating it.
 
 ### Files to create
 
@@ -19,7 +19,7 @@ Walk a new user from zero to a working test. Not a reference (that's the README)
 - Writing your first test: full step-by-step with a real binary
 - Running the test and reading the output
 - Understanding failure output: the box-bordered screen captures, "waiting for" descriptions, "recent screen captures (oldest to newest)" format
-- Configuring the session: `WithSize`, `WithTimeout`, `WithEnv`, `WithArgs`, `WithDir`, with defaults table (80x24, 5s timeout, 50ms poll interval)
+- Configuring the session: `WithSize`, `WithTimeout`, `WithPollInterval`, `WithEnv`, `WithArgs`, `WithDir`, with defaults table (80x24, 5s timeout, 50ms poll interval)
 - Next steps: links to the other guides
 
 #### 2. `docs/matchers.md` — Matchers in depth
@@ -41,11 +41,11 @@ Deep dive into golden-file testing.
 
 - Concept: what snapshot testing is, why it's useful for TUI output
 - Taking a snapshot: `term.MatchSnapshot("name")` and `screen.MatchSnapshot(t, "name")`
-- File paths: `testdata/<sanitized-test-name>-<hash>/<name>.txt`
+- File paths: `testdata/<sanitized-test-name>-<hash>/<sanitized-name>.txt`
   - Hash: first 4 bytes of SHA-256 of `t.Name()`, hex-encoded (8 chars)
   - Name sanitization: `[A-Za-z0-9.-]` kept, everything else becomes `_`, truncated to 60 chars
 - Content normalization: trailing spaces trimmed per line, trailing blank lines removed, single trailing newline added
-- The update workflow: `CRAWLER_UPDATE=1 go test ./...` (truthy values: `1`, `true`, `yes`), reviewing changes with `git diff testdata/`
+- The update workflow: `CRAWLER_UPDATE=1 go test ./...` (truthy values are exact lowercase matches: `1`, `true`, `yes`), reviewing changes with `git diff testdata/`
 - `Terminal.MatchSnapshot` vs `Screen.MatchSnapshot`: the former captures then snapshots, the latter snapshots an already-captured screen (e.g., from `WaitForScreen`)
 - Mismatch output format: golden file path, golden content, actual content, rerun instructions
 - Missing golden file output: path, actual screen, rerun instructions
@@ -104,6 +104,10 @@ For contributors and users who want to understand internals.
 
 Each doc links to related guides where relevant and points back to the README for the API overview table and `go doc` for detailed signatures.
 
+### Root README updates
+
+Add a `Documentation` section to the root `README.md` with links to all 6 new guides in `docs/` so they are discoverable from the repository front page.
+
 ### Source files to reference during implementation
 
 - `crawler.go` — Open, WaitFor, WaitExit, Resize, Scrollback, diagnostics formatting
@@ -119,6 +123,7 @@ Each doc links to related guides where relevant and points back to the README fo
 ## Verification
 
 - All 6 files render correctly as GitHub-flavored Markdown
+- Root `README.md` includes working links to all 6 docs guides
 - Code examples are syntactically valid Go
 - Cross-links between docs resolve correctly
 - Facts match the source code (defaults, error messages, path formats, behavior)
