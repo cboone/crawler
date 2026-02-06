@@ -14,7 +14,7 @@ output, and assert against it — all through the standard `*testing.T` interfac
    table-driven tests, `t.Helper()`, `t.Cleanup()`. No DSLs.
 3. **Reliable**: Deterministic waits instead of `time.Sleep`. Automatic retry
    with timeouts, like Playwright's auto-waiting locators.
-4. **Snapshot testing**: Golden-file screen captures with `go test -update`.
+4. **Snapshot testing**: Golden-file screen captures with `CRAWLER_UPDATE=1`.
 5. **Simple internals**: Shell out to the `tmux` CLI. No cgo, no terminfo
    parsing, no terminal emulator reimplementation.
 
@@ -25,6 +25,15 @@ output, and assert against it — all through the standard `*testing.T` interfac
 - Windows support. tmux is Unix-only; that is an accepted constraint.
 - Parsing or understanding ANSI escape sequences or styled output.
   Screen content is plain text as returned by `tmux capture-pane -p`.
+
+## Constraints
+
+- **Minimum Go version**: 1.21+ (for `testing.TB` improvements and `slices` if
+  needed from stdlib).
+- **Minimum tmux version**: 3.0+ (released November 2019). Covers all needed
+  features including `capture-pane -p`, `resize-window`, and `list-panes`
+  format strings. Checked at runtime in `Open`.
+- **Supported OS**: Linux, macOS. Any Unix-like system where tmux runs.
 
 ---
 
@@ -151,12 +160,14 @@ Configuration passed to Open via functional options.
 
 ```go
 type options struct {
-    width       int           // terminal columns (default 80)
-    height      int           // terminal rows (default 24)
-    env         []string      // additional environment variables
-    dir         string        // working directory for the process
-    timeout     time.Duration // default timeout for WaitFor (default 5s)
+    args         []string      // arguments to the binary
+    width        int           // terminal columns (default 80)
+    height       int           // terminal rows (default 24)
+    env          []string      // additional environment variables (appended to current env)
+    dir          string        // working directory for the process
+    timeout      time.Duration // default timeout for WaitFor (default 5s)
     pollInterval time.Duration // poll interval for WaitFor (default 50ms)
+    tmuxPath     string        // path to tmux binary (default: "tmux", resolved via $PATH)
 }
 ```
 
@@ -167,27 +178,48 @@ type options struct {
 ### Opening and closing
 
 ```go
+// Open starts the binary in a new tmux session.
+// Cleanup is automatic via t.Cleanup — no defer needed.
+func Open(t testing.TB, binary string, opts ...Option) *Terminal
+```
+
+Basic usage:
+
+```go
 func TestMyApp(t *testing.T) {
-    // Open starts the binary in a new tmux session.
-    // Cleanup is automatic via t.Cleanup — no defer needed.
-    term := crawler.Open(t, "path/to/binary", "arg1", "arg2")
+    term := crawler.Open(t, "path/to/binary",
+        crawler.WithArgs("arg1", "arg2"),
+    )
 }
 ```
 
-With options:
+With more options:
 
 ```go
 term := crawler.Open(t, "./my-app",
+    crawler.WithArgs("--verbose"),
     crawler.WithSize(120, 40),
     crawler.WithEnv("NO_COLOR=1", "TERM=xterm-256color"),
     crawler.WithDir("/tmp/workdir"),
     crawler.WithTimeout(10 * time.Second),
+    crawler.WithTmuxPath("/opt/homebrew/bin/tmux"),
 )
 ```
+
+`WithEnv` values are **appended** to the current process environment.
+They do not replace it. This matches `exec.Cmd.Env` semantics when
+combined with `os.Environ()`.
+
+`WithTmuxPath` allows specifying a non-standard tmux binary location.
+Defaults to `"tmux"` (resolved via `$PATH`). The `CRAWLER_TMUX`
+environment variable can also be used as a fallback before the default.
 
 **Implementation**: `Open` calls `tmux -L <unique-socket> new-session -d -x <w> -y <h> <binary> <args...>`,
 waits for the session to be ready, and registers a `t.Cleanup` that calls
 `tmux -L <socket> kill-server`.
+
+Socket files are created under `os.TempDir()` so the OS can clean up
+stale sockets if a test is killed (SIGKILL) and `t.Cleanup` does not run.
 
 ### Sending input
 
@@ -205,6 +237,7 @@ func (term *Terminal) SendKeys(keys ...string)
 Usage:
 
 ```go
+term := crawler.Open(t, "./my-app")
 term.Type("hello world")
 term.Press(crawler.Enter)
 term.Press(crawler.Ctrl('c'))
@@ -353,7 +386,7 @@ func Any(matchers ...Matcher) Matcher
 func Empty() Matcher
 
 // Cursor matches if the cursor is at the given position.
-// (Requires tmux capture-pane -P for cursor position.)
+// Uses tmux display-message -p -t <pane> '#{cursor_x} #{cursor_y}'.
 func Cursor(row, col int) Matcher
 ```
 
@@ -363,7 +396,7 @@ func Cursor(row, col int) Matcher
 // MatchSnapshot compares the current screen against a golden file
 // stored in testdata/<TestName>/<name>.txt.
 //
-// Run `go test -update` to create or update golden files.
+// Set CRAWLER_UPDATE=1 to create or update golden files.
 func (term *Terminal) MatchSnapshot(name string)
 
 // MatchSnapshot on Screen allows snapshotting a previously captured screen.
@@ -383,17 +416,14 @@ func TestWelcomeScreen(t *testing.T) {
 
 Golden files are plain text — easy to review in diffs.
 
-**Update flag**: Register via `TestMain` or an `init()`:
+**Updating golden files**: Set the `CRAWLER_UPDATE` environment variable:
 
-```go
-func TestMain(m *testing.M) {
-    crawler.RegisterUpdateFlag() // registers -update flag
-    flag.Parse()
-    os.Exit(m.Run())
-}
+```sh
+CRAWLER_UPDATE=1 go test ./...
 ```
 
-Then: `go test -update` writes/overwrites golden files.
+This avoids requiring users to write a `TestMain` just to register a flag
+(which conflicts when `TestMain` is already defined for other reasons).
 
 ### Convenience: multi-step interactions
 
@@ -488,10 +518,13 @@ Implementation: `tmux -L <sock> resize-window -x <w> -y <h>`.
 ### Reading process exit
 
 ```go
-// Wait waits for the TUI process to exit and returns its exit code.
+// WaitExit waits for the TUI process to exit and returns its exit code.
 // Useful for testing that a program terminates cleanly.
-func (term *Terminal) Wait(opts ...WaitOption) int
+func (term *Terminal) WaitExit(opts ...WaitOption) int
 ```
+
+Named `WaitExit` (not `Wait`) to clearly distinguish from `WaitFor`,
+which waits for screen content.
 
 Implementation: Poll `tmux -L <sock> list-panes -F '#{pane_dead} #{pane_dead_status}'`
 until the pane is marked dead, then return the status.
@@ -524,18 +557,27 @@ Minimum viable library. Enough to write real tests.
 - [ ] `Text` and `Regexp` matchers
 - [ ] Basic integration tests (test the library against a small TUI program)
 
+**Phase 1 acceptance criteria**: A user can write a test that opens a real
+binary, sends keystrokes, waits for screen content, and asserts against it.
+All of the following pass:
+- Test that `Open` starts a tmux session and `t.Cleanup` kills it.
+- Test that `Type` and `Press` produce the expected screen output.
+- Test that `WaitFor` succeeds when content appears.
+- Test that `WaitFor` calls `t.Fatal` with a useful message on timeout.
+- Test that two parallel subtests do not interfere with each other.
+
 ### Phase 2: Matchers and snapshots
 
 - [ ] `Line`, `LineContains`, `Not`, `All`, `Any`, `Empty` matchers
-- [ ] `MatchSnapshot` with golden file creation and `-update` flag
+- [ ] `MatchSnapshot` with golden file creation and `CRAWLER_UPDATE` env var
 - [ ] `Resize`
-- [ ] `Wait` (process exit)
+- [ ] `WaitExit` (process exit)
 - [ ] `Scrollback`
 - [ ] More key constants (function keys, Alt combos)
 
 ### Phase 3: Polish
 
-- [ ] `Cursor` matcher (cursor position via `tmux capture-pane` options)
+- [ ] `Cursor` matcher (cursor position via `tmux display-message`)
 - [ ] `WaitForScreen` (return the matching screen)
 - [ ] Diagnostic output: on failure, dump last N screen captures
 - [ ] Parallel test documentation and testing
@@ -573,9 +615,11 @@ Tests for the library verify:
 
 ## Dependencies
 
-**Runtime**: `tmux` must be installed on the system (not a Go dependency).
-The library should check for tmux at `Open` time and call `t.Skip("tmux not found")`
-with a helpful message if it's missing.
+**Runtime**: `tmux` 3.0+ must be installed on the system (not a Go dependency).
+The library checks for tmux at `Open` time and calls `t.Skip("tmux not found")`
+with a helpful message if it's missing. The tmux binary is located by checking,
+in order: `WithTmuxPath` option, `CRAWLER_TMUX` environment variable, then
+`$PATH` lookup.
 
 **Go module dependencies**: Ideally zero. The standard library provides
 everything needed:
@@ -584,8 +628,7 @@ everything needed:
 - `testing` — test integration
 - `time` — polling and timeouts
 - `crypto/rand` or `math/rand` — unique socket names
-- `path/filepath`, `os` — golden file management
-- `flag` — `-update` flag
+- `path/filepath`, `os` — golden file management, `CRAWLER_UPDATE` env var
 
 No third-party dependencies means no version conflicts for users.
 
@@ -609,23 +652,22 @@ work with one framework. crawler works with anything that runs in a terminal.
 
 ---
 
-## Open questions
+## Decisions (resolved from earlier open questions)
 
-1. **Color/style assertions**: `capture-pane -p` returns plain text.
-   `capture-pane -e` includes escape codes. Should we support style matching
-   in a later phase, or explicitly exclude it?
+1. **Color/style assertions**: Deferred. Plain text via `capture-pane -p` is
+   the starting point. Style matching via `capture-pane -e` can be added as
+   an opt-in feature later if demand arises.
 
-2. **Mouse support**: tmux supports `send-keys -M` for mouse events.
-   Worth including in the API, or defer until there's demand?
+2. **Mouse support**: Deferred. Not included in any initial phase. When added,
+   a `term.Click(row, col)` API would be the natural surface.
 
-3. **Multi-pane testing**: Some TUIs are themselves launched inside tmux.
-   Should we support testing programs that create their own panes/windows,
-   or keep it simple with single-pane-per-test?
+3. **Multi-pane testing**: Out of scope. Single pane per test is the right
+   constraint. Multi-pane adds substantial complexity with minimal initial
+   value.
 
-4. **tmux minimum version**: Different tmux versions have different
-   `capture-pane` capabilities. What's the minimum we support? tmux 3.0+
-   seems reasonable (released 2019).
+4. **tmux minimum version**: 3.0+ (released November 2019). Covers all needed
+   features. Checked at runtime in `Open` via `tmux -V`.
 
-5. **Module path**: `github.com/cboone/crawler` or something more
-   descriptive? The name "crawler" doesn't immediately suggest TUI testing.
-   Alternatives: `tuitest`, `termtest`, `tmtest`, `screentest`.
+5. **Module path**: `github.com/cboone/crawler`. The name is fine — the
+   package doc and README provide context. A vanity import path can be added
+   later if desired.
