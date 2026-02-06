@@ -318,18 +318,18 @@ func TestScrollback(t *testing.T) {
 	term.Press(crawler.Enter)
 	term.WaitFor(crawler.Text("ready>"))
 
-	// Give tmux a moment to update scrollback.
-	time.Sleep(100 * time.Millisecond)
-
-	scrollback := term.Scrollback()
-	content := scrollback.String()
-
-	// Should contain early lines that scrolled off screen.
-	if !strings.Contains(content, "line 1") {
-		t.Errorf("expected scrollback to contain 'line 1', got:\n%s", content)
-	}
-	if !strings.Contains(content, "line 20") {
-		t.Errorf("expected scrollback to contain 'line 20', got:\n%s", content)
+	// Poll until scrollback contains both early and late lines.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		scrollback := term.Scrollback()
+		content := scrollback.String()
+		if strings.Contains(content, "line 1") && strings.Contains(content, "line 20") {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("scrollback did not contain expected lines within timeout; last content:\n%s", content)
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

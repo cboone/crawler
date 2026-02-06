@@ -39,10 +39,10 @@
 // Wait behavior:
 //
 //   - Defaults: 5s timeout, 50ms poll interval
-//   - Per-terminal overrides: [WithTimeout], [WithPollInterval]
+//   - Per-terminal overrides: [WithTimeout], [WithPollInterval] (trusted, not clamped)
 //   - Per-call overrides: [WithinTimeout], [WithWaitPollInterval]
-//   - Poll intervals under 10ms are clamped to 10ms
-//   - Negative timeout or poll values fail the test immediately
+//   - Per-call poll intervals under 10ms are clamped to 10ms
+//   - Per-call negative timeout or poll values fail the test immediately
 //   - If the process exits early, waits fail immediately with diagnostics
 //
 // Built-in matchers include [Text], [Regexp], [Line], [LineContains], [Not],

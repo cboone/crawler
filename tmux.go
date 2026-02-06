@@ -107,8 +107,14 @@ func generateSocketPath(t testing.TB) string {
 
 	// Handle collision: if file exists, regenerate.
 	for i := 0; i < 10; i++ {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
 			return path
+		}
+		if err != nil {
+			// Non-existence check failed for a reason other than the file
+			// not existing (e.g., permission denied). Surface the real error.
+			t.Fatalf("crawler: open: failed to check socket path: %v", err)
 		}
 		if _, err := rand.Read(b); err != nil {
 			t.Fatalf("crawler: open: failed to generate random bytes: %v", err)
