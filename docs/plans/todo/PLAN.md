@@ -43,15 +43,15 @@ output, and assert against it — all through the standard `*testing.T` interfac
   Go test process
   ┌──────────────────────────────────┐
   │  func TestFoo(t *testing.T) {    │
-  │      term := crawler.Open(t, …)  │──── tmux -L <sock> new-session -d …
-  │      term.WaitFor(Text("hello")) │──── tmux -L <sock> capture-pane -p
-  │      term.SendKeys("world")      │──── tmux -L <sock> send-keys …
-  │      term.Screen().Match(…)      │──── tmux -L <sock> capture-pane -p
+  │      term := crawler.Open(t, …)  │──── tmux -S <socket-path> new-session -d …
+  │      term.WaitFor(Text("hello")) │──── tmux -S <socket-path> capture-pane -p
+  │      term.SendKeys("world")      │──── tmux -S <socket-path> send-keys …
+  │      term.Screen().Match(…)      │──── tmux -S <socket-path> capture-pane -p
   │  }                               │
   └──────────────────────────────────┘
                     │
                     ▼
-  tmux server (per-test isolated socket)
+  tmux server (per-test isolated socket path)
   ┌──────────────────────────────────┐
   │  session: "test-<random>"        │
   │  window 0, pane %0               │
@@ -64,7 +64,8 @@ output, and assert against it — all through the standard `*testing.T` interfac
   └──────────────────────────────────┘
 ```
 
-Each test (or subtest) gets its own tmux server via a unique `-L` socket name.
+Each test (or subtest) gets its own tmux server via a unique `-S` socket path
+under `os.TempDir()`.
 This provides complete isolation — tests cannot interfere with each other or
 with the user's tmux sessions.
 
@@ -99,7 +100,7 @@ crawler/
 ├── doc.go                  # Package documentation
 ├── internal/
 │   └── tmuxcli/
-│       ├── tmuxcli.go      # tmux command execution, socket management
+│       ├── tmuxcli.go      # tmux command execution, socket-path management
 │       └── tmuxcli_test.go
 └── testdata/               # Golden files for the library's own tests
     └── ...
@@ -124,7 +125,7 @@ The primary handle to a running TUI under test.
 // It is created with Open and cleaned up automatically via t.Cleanup.
 type Terminal struct {
     t      testing.TB
-    socket string   // tmux -L socket name
+    socketPath string // tmux -S socket path
     pane   string   // tmux pane ID (e.g. "%0")
     opts   options
 }
@@ -214,12 +215,14 @@ combined with `os.Environ()`.
 Defaults to `"tmux"` (resolved via `$PATH`). The `CRAWLER_TMUX`
 environment variable can also be used as a fallback before the default.
 
-**Implementation**: `Open` calls `tmux -L <unique-socket> new-session -d -x <w> -y <h> <binary> <args...>`,
+**Implementation**: `Open` generates a unique socket path (for example,
+`<tmp>/crawler-<test>-<random>.sock`) and calls
+`tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args...>`,
 waits for the session to be ready, and registers a `t.Cleanup` that calls
-`tmux -L <socket> kill-server`.
+`tmux -S <socket-path> kill-server`.
 
-Socket files are created under `os.TempDir()` so the OS can clean up
-stale sockets if a test is killed (SIGKILL) and `t.Cleanup` does not run.
+Socket files are explicitly placed under `os.TempDir()`.
+`Open` removes any stale socket file before starting tmux if the path exists.
 
 ### Sending input
 
@@ -282,6 +285,17 @@ func (term *Terminal) Screen() *Screen
 
 This calls `tmux capture-pane -p -t <pane>` and parses the output.
 
+Capture rules are explicit to keep behavior deterministic:
+
+- `Screen()` captures the visible pane only, one string line per terminal row
+  (wrapped rows are **not** joined).
+- Line endings are normalized to `\n` and the single terminal newline emitted
+  by `capture-pane` is removed from the in-memory representation.
+- Leading and interior spaces are preserved exactly.
+- Snapshot serialization applies additional normalization for stable diffs:
+  trailing spaces on each line are trimmed, trailing blank lines are removed,
+  and files are written with a single final newline.
+
 ### Screen inspection
 
 ```go
@@ -321,6 +335,25 @@ func (term *Terminal) WaitFor(m Matcher, opts ...WaitOption)
 // WaitForScreen is like WaitFor but returns the matching Screen.
 func (term *Terminal) WaitForScreen(m Matcher, opts ...WaitOption) *Screen
 ```
+
+`WaitOption` is shared by `WaitFor`, `WaitForScreen`, and `WaitExit`:
+
+```go
+// WithinTimeout overrides the call timeout.
+func WithinTimeout(d time.Duration) WaitOption
+
+// WithPollInterval overrides the polling interval for this call.
+func WithPollInterval(d time.Duration) WaitOption
+```
+
+Wait option semantics:
+
+- Defaults come from terminal options (`WithTimeout`, `WithPollInterval`),
+  or library defaults (5s timeout, 50ms poll interval).
+- `WithinTimeout(0)` and `WithPollInterval(0)` mean "use defaults".
+- Negative values are invalid and cause an immediate `t.Fatal`.
+- Positive poll intervals under 10ms are clamped to 10ms to prevent busy-loop
+  polling.
 
 Usage:
 
@@ -394,7 +427,7 @@ func Cursor(row, col int) Matcher
 
 ```go
 // MatchSnapshot compares the current screen against a golden file
-// stored in testdata/<TestName>/<name>.txt.
+// stored in testdata/<sanitized-test-name>/<sanitized-name>.txt.
 //
 // Set CRAWLER_UPDATE=1 to create or update golden files.
 func (term *Terminal) MatchSnapshot(name string)
@@ -410,11 +443,18 @@ func TestWelcomeScreen(t *testing.T) {
     term := crawler.Open(t, "./my-app")
     term.WaitFor(crawler.Text("Welcome"))
     term.MatchSnapshot("welcome")
-    // Compares against testdata/TestWelcomeScreen/welcome.txt
+    // Compares against testdata/TestWelcomeScreen-1a2b3c4d/welcome.txt
 }
 ```
 
 Golden files are plain text — easy to review in diffs.
+
+Snapshot paths are sanitized to avoid collisions and invalid paths:
+
+- Base directory uses full `t.Name()` plus a short stable hash.
+- `/` in subtest names is replaced to keep one directory level.
+- Whitespace becomes `_`; characters outside `[A-Za-z0-9._-]` become `_`.
+- Snapshot `name` is sanitized with the same character rules.
 
 **Updating golden files**: Set the `CRAWLER_UPDATE` environment variable:
 
@@ -476,7 +516,7 @@ func TestNavigation(t *testing.T) {
 ```
 
 Each subtest gets its own tmux session, so they are fully independent.
-`t.Parallel()` works — unique socket names prevent collisions.
+`t.Parallel()` works — unique socket paths prevent collisions.
 
 ---
 
@@ -484,14 +524,15 @@ Each subtest gets its own tmux session, so they are fully independent.
 
 ### tmux session lifecycle
 
-1. **Open**: Generate unique socket name (`crawler-<test>-<random>`).
-   Run `tmux -L <sock> new-session -d -x <w> -y <h> -- <binary> <args>`.
-   Poll `tmux -L <sock> list-panes` until the session is ready (should be
-   near-instant). Record the pane ID.
+1. **Open**: Generate a unique socket path
+   (`<tmp>/crawler-<test>-<random>.sock`).
+   Run `tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args>`.
+   Poll `tmux -S <socket-path> list-panes` until the session is ready
+   (typically near-instant). Record the pane ID.
 
-2. **During test**: All operations target `-L <sock> -t <pane>`.
+2. **During test**: All operations target `-S <socket-path> -t <pane>`.
 
-3. **Cleanup** (via `t.Cleanup`): Run `tmux -L <sock> kill-server`.
+3. **Cleanup** (via `t.Cleanup`): Run `tmux -S <socket-path> kill-server`.
    This kills the tmux server and all processes within it. Socket files
    are cleaned up automatically by tmux.
 
@@ -501,9 +542,28 @@ All methods that interact with tmux check for errors and call `t.Fatal`
 with a clear message. The user never has to check `err` returns — this
 follows the pattern of `httptest.NewServer` and similar test helpers.
 
-If the TUI process exits unexpectedly, the next `Screen()` or `WaitFor`
-call detects this (via `tmux list-panes` failing or the pane being marked
-dead) and calls `t.Fatal` with "process exited unexpectedly".
+Error format is standardized across the package:
+
+```text
+crawler: <operation>: <reason>
+command: tmux <args...>
+stderr: <tmux stderr, if any>
+```
+
+`<operation>` is one of `open`, `send-keys`, `capture`, `wait-for`,
+`wait-exit`, `resize`, or `snapshot`.
+
+Process lifecycle semantics are explicit:
+
+- `Screen`, `Type`, `Press`, `SendKeys`, and `Resize` fail immediately if the
+  pane is dead: `crawler: <operation>: process exited unexpectedly (status N)`.
+- `WaitFor` and `WaitForScreen` fail immediately if the pane dies before the
+  matcher succeeds.
+- `WaitExit` returns immediately if the process is already dead when called.
+- Calling `WaitExit` is the expected API for tests that intentionally terminate
+  the process; this is treated as a normal flow.
+- `WaitExit` timeout is fatal and includes timeout, pane state, and last screen
+  capture for diagnostics.
 
 ### Resize support
 
@@ -513,7 +573,7 @@ dead) and calls `t.Fatal` with "process exited unexpectedly".
 func (term *Terminal) Resize(width, height int)
 ```
 
-Implementation: `tmux -L <sock> resize-window -x <w> -y <h>`.
+Implementation: `tmux -S <socket-path> resize-window -x <w> -y <h>`.
 
 ### Reading process exit
 
@@ -526,7 +586,8 @@ func (term *Terminal) WaitExit(opts ...WaitOption) int
 Named `WaitExit` (not `Wait`) to clearly distinguish from `WaitFor`,
 which waits for screen content.
 
-Implementation: Poll `tmux -L <sock> list-panes -F '#{pane_dead} #{pane_dead_status}'`
+Implementation: Poll
+`tmux -S <socket-path> list-panes -F '#{pane_dead} #{pane_dead_status}'`
 until the pane is marked dead, then return the status.
 
 ### Scrollback access
@@ -539,6 +600,10 @@ func (term *Terminal) Scrollback() *Screen
 Implementation: `tmux capture-pane -p -S - -E -` (capture from start to end
 of history).
 
+Scrollback is bounded by tmux `history-limit`; it is not infinite.
+To reduce environment variance, `Open` sets `history-limit` for the test
+session to a fixed value (for example `10000`).
+
 ---
 
 ## Implementation phases
@@ -548,7 +613,7 @@ of history).
 Minimum viable library. Enough to write real tests.
 
 - [ ] `go.mod` initialization
-- [ ] `internal/tmuxcli` — execute tmux commands, manage sockets
+- [ ] `internal/tmuxcli` — execute tmux commands, manage socket paths
 - [ ] `Terminal` type with `Open` and `t.Cleanup` teardown
 - [ ] `SendKeys`, `Type`, `Press` with key constants
 - [ ] `Screen` type with `capture-pane` integration
@@ -565,6 +630,8 @@ All of the following pass:
 - Test that `WaitFor` succeeds when content appears.
 - Test that `WaitFor` calls `t.Fatal` with a useful message on timeout.
 - Test that two parallel subtests do not interfere with each other.
+- Stress test with at least 20 `t.Parallel()` subtests shows no cross-test
+  leakage, and waiting does not poll faster than the configured interval.
 
 ### Phase 2: Matchers and snapshots
 
@@ -591,17 +658,14 @@ All of the following pass:
 
 ## Testing the library itself
 
-The library needs a test TUI binary. The simplest approach:
+The library needs a test TUI binary. Use a raw ANSI fixture program to keep
+the test harness dependency-free and deterministic:
 
 ```
 internal/testbin/
-├── main.go          # A minimal bubbletea or raw-ANSI program
-└── testbin_test.go  # Build the binary in TestMain, run tests against it
+├── main.go          # Raw ANSI + stdin loop fixture program
+└── testbin_test.go  # Build in TestMain, run integration tests against it
 ```
-
-Alternatively, use a raw approach — a small Go program that writes ANSI
-directly to stdout and reads from stdin — to avoid any framework dependency
-in the library's own tests.
 
 Tests for the library verify:
 - `Open` starts a session and `t.Cleanup` tears it down.
@@ -616,10 +680,17 @@ Tests for the library verify:
 ## Dependencies
 
 **Runtime**: `tmux` 3.0+ must be installed on the system (not a Go dependency).
-The library checks for tmux at `Open` time and calls `t.Skip("tmux not found")`
-with a helpful message if it's missing. The tmux binary is located by checking,
-in order: `WithTmuxPath` option, `CRAWLER_TMUX` environment variable, then
-`$PATH` lookup.
+The tmux binary is located by checking, in order: `WithTmuxPath` option,
+`CRAWLER_TMUX` environment variable, then `$PATH` lookup.
+
+Dependency policy:
+
+- If no explicit tmux path is configured and tmux is not in `$PATH`, call
+  `t.Skip("crawler: open: tmux not found")`.
+- If `WithTmuxPath` or `CRAWLER_TMUX` is set but invalid or not executable,
+  call `t.Fatal` (explicit configuration error).
+- If tmux is found but version is below 3.0, call `t.Skip` with the detected
+  version and required minimum.
 
 **Go module dependencies**: Ideally zero. The standard library provides
 everything needed:
@@ -627,7 +698,7 @@ everything needed:
 - `strings`, `regexp` — screen content matching
 - `testing` — test integration
 - `time` — polling and timeouts
-- `crypto/rand` or `math/rand` — unique socket names
+- `crypto/rand` or `math/rand` — unique socket path suffixes
 - `path/filepath`, `os` — golden file management, `CRAWLER_UPDATE` env var
 
 No third-party dependencies means no version conflicts for users.
