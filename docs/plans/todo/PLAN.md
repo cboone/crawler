@@ -2,7 +2,7 @@
 
 A Go testing library for black-box testing of terminal user interfaces.
 Tests run real binaries inside tmux sessions, send keystrokes, capture screen
-output, and assert against it — all through the standard `*testing.T` interface.
+output, and assert against it — all through the standard `testing.TB` interface.
 
 ---
 
@@ -302,7 +302,9 @@ Capture rules are explicit to keep behavior deterministic:
 // String returns the full screen content as a string.
 func (s *Screen) String() string
 
-// Lines returns the screen content as a slice of strings, one per row.
+// Lines returns a copy of the screen content as a slice of strings, one per row.
+// The returned slice is a shallow copy; callers may modify it without affecting
+// the Screen.
 func (s *Screen) Lines() []string
 
 // Line returns the content of a single row (0-indexed).
