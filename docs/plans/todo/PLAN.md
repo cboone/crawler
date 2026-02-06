@@ -41,14 +41,14 @@ output, and assert against it — all through the standard `testing.TB` interfac
 
 ```
   Go test process
-  ┌──────────────────────────────────┐
-  │  func TestFoo(t *testing.T) {    │
-  │      term := crawler.Open(t, …)  │──── tmux -S <socket-path> new-session -d …
-  │      term.WaitFor(Text("hello")) │──── tmux -S <socket-path> capture-pane -p
-  │      term.SendKeys("world")      │──── tmux -S <socket-path> send-keys …
-  │      term.Screen().Match(…)      │──── tmux -S <socket-path> capture-pane -p
-  │  }                               │
-  └──────────────────────────────────┘
+  ┌──────────────────────────────────────────────┐
+  │  func TestFoo(t *testing.T) {                │
+  │      term := crawler.Open(t, …)              │──── tmux -S <socket-path> new-session -d …
+  │      term.WaitFor(crawler.Text("hello"))     │──── tmux -S <socket-path> capture-pane -p
+  │      term.SendKeys("world")                  │──── tmux -S <socket-path> send-keys …
+  │      term.Screen().Match(…)                  │──── tmux -S <socket-path> capture-pane -p
+  │  }                                           │
+  └──────────────────────────────────────────────┘
                     │
                     ▼
   tmux server (per-test isolated socket path)
@@ -169,6 +169,7 @@ type options struct {
     timeout      time.Duration // default timeout for WaitFor (default 5s)
     pollInterval time.Duration // poll interval for WaitFor (default 50ms)
     tmuxPath     string        // path to tmux binary (default: "tmux", resolved via $PATH)
+    historyLimit int           // tmux scrollback history limit; 0 uses the default set by Open
 }
 ```
 
@@ -653,13 +654,13 @@ All of the following pass:
 - [ ] `MatchSnapshot` with golden file creation and `CRAWLER_UPDATE` env var
 - [ ] `Resize`
 - [ ] `WaitExit` (process exit)
+- [ ] `WaitForScreen` (return the matching screen; trivial wrapper over `WaitFor`)
 - [ ] `Scrollback`
 - [ ] More key constants (function keys, Alt combos)
 
 ### Phase 3: Polish
 
 - [ ] `Cursor` matcher (cursor position via `tmux display-message`)
-- [ ] `WaitForScreen` (return the matching screen)
 - [ ] Diagnostic output: on failure, dump last N screen captures
 - [ ] Parallel test documentation and testing
 - [ ] CI setup (GitHub Actions with tmux installed)
