@@ -618,7 +618,8 @@ until the targeted pane is marked dead, then return the status.
 // Its height (and len(Lines())) reflects the total number of captured lines,
 // which is typically larger than the pane's visible height. Width is the
 // maximum line width across all captured lines. Callers should use
-// len(s.Lines()) rather than s.Height to reason about scrollback length.
+// len(s.Lines()) to reason about scrollback length, rather than relying on
+// the visible height returned by s.Size().
 func (term *Terminal) Scrollback() *Screen
 ```
 
