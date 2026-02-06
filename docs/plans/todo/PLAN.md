@@ -216,12 +216,15 @@ Defaults to `"tmux"` (resolved via `$PATH`). The `CRAWLER_TMUX`
 environment variable can also be used as a fallback before the default.
 
 **Implementation**: `Open` generates a unique socket path (for example,
-`<tmp>/crawler-<test>-<random>.sock`) and calls
+`<tmp>/crawler-<sanitized-test>-<random>.sock`) and calls
 `tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args...>`,
 waits for the session to be ready, and registers a `t.Cleanup` that calls
 `tmux -S <socket-path> kill-server`.
 
-Socket files are explicitly placed under `os.TempDir()`.
+Socket files are explicitly placed under `os.TempDir()`. The
+`<sanitized-test>` component is derived from the test name but cleaned so it
+contains only filesystem-safe characters (for example, replacing `/` from
+subtest names with `_`) and never introduces subdirectories.
 `Open` removes any stale socket file before starting tmux if the path exists.
 
 ### Sending input
@@ -532,8 +535,10 @@ Each subtest gets its own tmux session, so they are fully independent.
 
 ### tmux session lifecycle
 
-1. **Open**: Generate a unique socket path
-   (`<tmp>/crawler-<test>-<random>.sock`).
+1. **Open**: Generate a unique, filesystem-safe socket path. Derive a
+   sanitized test identifier from the test name (for example, by replacing
+   characters such as `/` with `_`) to form
+   `<tmp>/crawler-<sanitized-test>-<random>.sock`.
    Run `tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args>`.
    Poll `tmux -S <socket-path> list-panes` until the session is ready
    (typically near-instant). Record the pane ID.
@@ -554,7 +559,7 @@ Error format is standardized across the package:
 
 ```text
 crawler: <operation>: <reason>
-command: tmux <args...>
+command: <tmux-path> <args...>
 stderr: <tmux stderr, if any>
 ```
 
@@ -581,7 +586,7 @@ Process lifecycle semantics are explicit:
 func (term *Terminal) Resize(width, height int)
 ```
 
-Implementation: `tmux -S <socket-path> resize-window -x <w> -y <h>`.
+Implementation: `tmux -S <socket-path> resize-window -t <pane> -x <w> -y <h>`.
 
 ### Reading process exit
 
@@ -595,8 +600,8 @@ Named `WaitExit` (not `Wait`) to clearly distinguish from `WaitFor`,
 which waits for screen content.
 
 Implementation: Poll
-`tmux -S <socket-path> list-panes -F '#{pane_dead} #{pane_dead_status}'`
-until the pane is marked dead, then return the status.
+`tmux -S <socket-path> list-panes -t <pane> -F '#{pane_dead} #{pane_dead_status}'`
+until the targeted pane is marked dead, then return the status.
 
 ### Scrollback access
 
@@ -605,8 +610,8 @@ until the pane is marked dead, then return the status.
 func (term *Terminal) Scrollback() *Screen
 ```
 
-Implementation: `tmux capture-pane -p -S - -E -` (capture from start to end
-of history).
+Implementation: `tmux capture-pane -t <pane> -p -S - -E -` (capture from
+start to end of history).
 
 Scrollback is bounded by tmux `history-limit`; it is not infinite.
 To reduce environment variance, `Open` sets `history-limit` for the test
