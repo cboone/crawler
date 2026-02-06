@@ -16,7 +16,7 @@ Snapshots work well when:
 - You have a stable screen that doesn't change between runs (no timestamps,
   random IDs, or other dynamic content).
 
-For screens with dynamic content, use [matchers](matchers.md) instead.
+For screens with dynamic content, use [matchers](MATCHERS.md) instead.
 
 ## Taking a snapshot
 
@@ -175,7 +175,7 @@ git commit -m "update golden files"
 
 ## See also
 
-- [Getting started](getting-started.md) -- first-test tutorial
-- [Matchers in depth](matchers.md) -- assertion matchers for dynamic content
-- [Recipes and patterns](patterns.md) -- common testing patterns
-- [Troubleshooting](troubleshooting.md) -- debugging and CI setup
+- [Getting started](GETTING-STARTED.md) -- first-test tutorial
+- [Matchers in depth](MATCHERS.md) -- assertion matchers for dynamic content
+- [Recipes and patterns](PATTERNS.md) -- common testing patterns
+- [Troubleshooting](TROUBLESHOOTING.md) -- debugging and CI setup

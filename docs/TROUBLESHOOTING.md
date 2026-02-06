@@ -291,7 +291,7 @@ t.Logf("screen size: %dx%d", w, h)
 
 ## See also
 
-- [Getting started](getting-started.md) -- first-test tutorial
-- [Matchers in depth](matchers.md) -- matchers and custom matchers
-- [Recipes and patterns](patterns.md) -- common testing scenarios
-- [Architecture](architecture.md) -- how crawler works internally
+- [Getting started](GETTING-STARTED.md) -- first-test tutorial
+- [Matchers in depth](MATCHERS.md) -- matchers and custom matchers
+- [Recipes and patterns](PATTERNS.md) -- common testing scenarios
+- [Architecture](ARCHITECTURE.md) -- how crawler works internally

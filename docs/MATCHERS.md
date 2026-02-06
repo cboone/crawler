@@ -242,6 +242,6 @@ waiting for \_\_\_".
 
 ## See also
 
-- [Getting started](getting-started.md) -- first-test tutorial
-- [Recipes and patterns](patterns.md) -- common scenarios using matchers
-- [Snapshot testing](snapshots.md) -- golden-file assertions
+- [Getting started](GETTING-STARTED.md) -- first-test tutorial
+- [Recipes and patterns](PATTERNS.md) -- common scenarios using matchers
+- [Snapshot testing](SNAPSHOTS.md) -- golden-file assertions

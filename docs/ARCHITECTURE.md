@@ -202,6 +202,6 @@ write `if err != nil` for crawler calls. Errors format as
 
 ## See also
 
-- [Getting started](getting-started.md) -- first-test tutorial
-- [Matchers in depth](matchers.md) -- the matcher system
-- [Troubleshooting](troubleshooting.md) -- debugging and CI setup
+- [Getting started](GETTING-STARTED.md) -- first-test tutorial
+- [Matchers in depth](MATCHERS.md) -- the matcher system
+- [Troubleshooting](TROUBLESHOOTING.md) -- debugging and CI setup

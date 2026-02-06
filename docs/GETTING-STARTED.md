@@ -151,10 +151,10 @@ term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(200*time.Millise
 
 ## Next steps
 
-- [Matchers in depth](matchers.md) -- all built-in matchers, composition, and
+- [Matchers in depth](MATCHERS.md) -- all built-in matchers, composition, and
   writing custom matchers
-- [Snapshot testing](snapshots.md) -- golden-file testing for screen content
-- [Recipes and patterns](patterns.md) -- common testing scenarios with complete
+- [Snapshot testing](SNAPSHOTS.md) -- golden-file testing for screen content
+- [Recipes and patterns](PATTERNS.md) -- common testing scenarios with complete
   examples
-- [Troubleshooting](troubleshooting.md) -- debugging failures and CI setup
-- [Architecture](architecture.md) -- how crawler works under the hood
+- [Troubleshooting](TROUBLESHOOTING.md) -- debugging failures and CI setup
+- [Architecture](ARCHITECTURE.md) -- how crawler works under the hood

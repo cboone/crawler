@@ -312,7 +312,7 @@ they don't support.
 
 ## See also
 
-- [Getting started](getting-started.md) -- first-test tutorial
-- [Matchers in depth](matchers.md) -- all matchers and custom matchers
-- [Snapshot testing](snapshots.md) -- golden-file testing
-- [Troubleshooting](troubleshooting.md) -- debugging and CI setup
+- [Getting started](GETTING-STARTED.md) -- first-test tutorial
+- [Matchers in depth](MATCHERS.md) -- all matchers and custom matchers
+- [Snapshot testing](SNAPSHOTS.md) -- golden-file testing
+- [Troubleshooting](TROUBLESHOOTING.md) -- debugging and CI setup
