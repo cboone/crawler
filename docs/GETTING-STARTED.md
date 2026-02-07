@@ -2,7 +2,8 @@
 
 This guide walks you through writing and running your first crawler test. For a
 concise API overview, see the [README](../README.md). For detailed function
-signatures, see `go doc github.com/cboone/crawler`.
+signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
+or run `go doc github.com/cboone/crawler`.
 
 ## Prerequisites
 

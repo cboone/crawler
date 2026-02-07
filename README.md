@@ -199,6 +199,7 @@ func TestNavigation(t *testing.T) {
 
 ## Documentation
 
+- [Package reference](https://pkg.go.dev/github.com/cboone/crawler) -- full API on pkg.go.dev
 - [Getting started](docs/GETTING-STARTED.md) -- first-test tutorial
 - [Matchers in depth](docs/MATCHERS.md) -- all built-in matchers, composition, and custom matchers
 - [Snapshot testing](docs/SNAPSHOTS.md) -- golden-file testing guide

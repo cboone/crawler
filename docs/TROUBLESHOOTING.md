@@ -3,7 +3,8 @@
 Debugging test failures, fixing common problems, and setting up CI.
 
 For API overview and usage examples, see the [README](../README.md). For
-detailed function signatures, see `go doc github.com/cboone/crawler`.
+detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
+or run `go doc github.com/cboone/crawler`.
 
 ## tmux not found
 

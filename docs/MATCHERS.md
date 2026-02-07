@@ -5,7 +5,8 @@ or `WaitForScreen` takes a matcher that is polled against screen captures until
 it succeeds or the timeout expires.
 
 For the API overview table, see the [README](../README.md). For function
-signatures, see `go doc github.com/cboone/crawler`.
+signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
+or run `go doc github.com/cboone/crawler`.
 
 ## How matchers work
 
