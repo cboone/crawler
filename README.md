@@ -1,10 +1,8 @@
 # crawler
 
-Playwright for TUIs via tmux.
+Test TUIs through tmux.
 
-A Go testing library for black-box testing of terminal user interfaces.
-Tests run real binaries inside tmux sessions, send keystrokes, capture screen
-output, and assert against it -- all through the standard `testing.TB` interface.
+A Go testing library for black-box testing of terminal user interfaces. Tests run binaries inside tmux sessions, send keystrokes, capture screen output, and assert against it. Uses the standard `testing.TB` interface.
 
 ## Quick start
 
@@ -104,7 +102,7 @@ term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(100*time.Millise
 On timeout, `WaitFor` calls `t.Fatal` with a diagnostic message showing what
 was expected and the most recent screen captures:
 
-```
+```text
 terminal_test.go:42: crawler: wait-for: timed out after 5s
     waiting for: screen to contain "Loading complete"
     recent screen captures (oldest to newest):
@@ -130,17 +128,17 @@ terminal_test.go:42: crawler: wait-for: timed out after 5s
 
 ### Built-in matchers
 
-| Matcher | Description |
-|---------|-------------|
-| `Text(s)` | Screen contains substring |
-| `Regexp(pattern)` | Screen matches regex |
-| `Line(n, s)` | Row n equals s (trailing spaces trimmed) |
-| `LineContains(n, s)` | Row n contains substring |
-| `Not(m)` | Inverts a matcher |
-| `All(m...)` | All matchers must match |
-| `Any(m...)` | At least one matcher must match |
-| `Empty()` | Screen has no visible content |
-| `Cursor(row, col)` | Cursor is at position |
+| Matcher              | Description                              |
+| -------------------- | ---------------------------------------- |
+| `Text(s)`            | Screen contains substring                |
+| `Regexp(pattern)`    | Screen matches regex                     |
+| `Line(n, s)`         | Row n equals s (trailing spaces trimmed) |
+| `LineContains(n, s)` | Row n contains substring                 |
+| `Not(m)`             | Inverts a matcher                        |
+| `All(m...)`          | All matchers must match                  |
+| `Any(m...)`          | At least one matcher must match          |
+| `Empty()`            | Screen has no visible content            |
+| `Cursor(row, col)`   | Cursor is at position                    |
 
 ### Snapshot testing
 
@@ -214,6 +212,7 @@ func TestNavigation(t *testing.T) {
 - **OS**: Linux, macOS, or any Unix-like system where tmux runs
 
 The tmux binary is located by checking, in order:
+
 1. `WithTmuxPath` option
 2. `CRAWLER_TMUX` environment variable
 3. `$PATH` lookup
@@ -224,7 +223,7 @@ Each test gets its own tmux server via a unique socket path under `os.TempDir()`
 All operations (`capture-pane`, `send-keys`, `resize-window`) go through the
 `tmux` CLI. No cgo, no terminfo parsing, no terminal emulator reimplementation.
 
-```
+```text
 Go test process
 +-------------------------------------------------+
 |  func TestFoo(t *testing.T) {                   |
