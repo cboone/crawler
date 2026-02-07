@@ -4,7 +4,8 @@ A cookbook of common TUI testing scenarios with complete examples. Each recipe
 is self-contained.
 
 For API details, see the [README](../README.md) and
-`go doc github.com/cboone/crawler`.
+the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
+or run `go doc github.com/cboone/crawler`.
 
 ## Basic interaction: Type / Press / WaitFor
 

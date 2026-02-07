@@ -6,7 +6,8 @@ assertions for each piece of text, you capture the entire screen and compare it
 against a committed file.
 
 For API overview and usage examples, see the [README](../README.md). For
-detailed function signatures, see `go doc github.com/cboone/crawler`.
+detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
+or run `go doc github.com/cboone/crawler`.
 
 ## When to use snapshots
 
