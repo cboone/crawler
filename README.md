@@ -1,4 +1,4 @@
-# crawler
+# strider
 
 Test TUIs through tmux.
 
@@ -7,14 +7,14 @@ A Go testing library for black-box testing of terminal user interfaces. Tests ru
 ## Quick start
 
 ```go
-import "github.com/cboone/crawler"
+import "github.com/cboone/strider"
 
 func TestMyApp(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
-    term.WaitFor(crawler.Text("Welcome"))
+    term := strider.Open(t, "./my-app")
+    term.WaitFor(strider.Text("Welcome"))
     term.Type("hello")
-    term.Press(crawler.Enter)
-    term.WaitFor(crawler.Text("hello"))
+    term.Press(strider.Enter)
+    term.WaitFor(strider.Text("hello"))
 }
 ```
 
@@ -23,7 +23,7 @@ No `defer`, no `Close()`. Cleanup is automatic via `t.Cleanup`.
 ## Install
 
 ```sh
-go get github.com/cboone/crawler
+go get github.com/cboone/strider
 ```
 
 Requires tmux 3.0+ installed on the system. No other dependencies.
@@ -40,7 +40,7 @@ table-driven tests, `t.Helper()`, `t.Cleanup()`. No DSLs.
 **Reliable waits** -- deterministic polling with timeouts instead of
 `time.Sleep`. Like Playwright's auto-waiting locators.
 
-**Snapshot testing** -- golden-file screen captures with `CRAWLER_UPDATE=1`.
+**Snapshot testing** -- golden-file screen captures with `STRIDER_UPDATE=1`.
 
 **Zero dependencies** -- standard library only. No version conflicts for users.
 
@@ -49,12 +49,12 @@ table-driven tests, `t.Helper()`, `t.Cleanup()`. No DSLs.
 ### Opening a session
 
 ```go
-term := crawler.Open(t, "./my-app",
-    crawler.WithArgs("--verbose"),
-    crawler.WithSize(120, 40),
-    crawler.WithEnv("NO_COLOR=1"),
-    crawler.WithDir("/tmp/workdir"),
-    crawler.WithTimeout(10 * time.Second),
+term := strider.Open(t, "./my-app",
+    strider.WithArgs("--verbose"),
+    strider.WithSize(120, 40),
+    strider.WithEnv("NO_COLOR=1"),
+    strider.WithDir("/tmp/workdir"),
+    strider.WithTimeout(10 * time.Second),
 )
 ```
 
@@ -62,10 +62,10 @@ term := crawler.Open(t, "./my-app",
 
 ```go
 term.Type("hello world")           // literal text
-term.Press(crawler.Enter)           // special keys
-term.Press(crawler.Ctrl('c'))       // Ctrl combinations
-term.Press(crawler.Alt('x'))        // Alt combinations
-term.Press(crawler.Tab, crawler.Tab, crawler.Enter)  // multiple keys
+term.Press(strider.Enter)           // special keys
+term.Press(strider.Ctrl('c'))       // Ctrl combinations
+term.Press(strider.Alt('x'))        // Alt combinations
+term.Press(strider.Tab, strider.Tab, strider.Enter)  // multiple keys
 term.SendKeys("raw", "tmux", "keys")  // escape hatch
 ```
 
@@ -83,27 +83,27 @@ screen.Size()             // (width, height)
 ### Waiting for content
 
 ```go
-term.WaitFor(crawler.Text("Loading complete"))
-term.WaitFor(crawler.Regexp(`\d+ items`))
-term.WaitFor(crawler.LineContains(0, "My App v1.0"))
-term.WaitFor(crawler.Not(crawler.Text("Loading...")))
-term.WaitFor(crawler.All(crawler.Text("Done"), crawler.Not(crawler.Text("Error"))))
+term.WaitFor(strider.Text("Loading complete"))
+term.WaitFor(strider.Regexp(`\d+ items`))
+term.WaitFor(strider.LineContains(0, "My App v1.0"))
+term.WaitFor(strider.Not(strider.Text("Loading...")))
+term.WaitFor(strider.All(strider.Text("Done"), strider.Not(strider.Text("Error"))))
 
 // Capture the matching screen
-screen := term.WaitForScreen(crawler.Text("Results"))
+screen := term.WaitForScreen(strider.Text("Results"))
 
 // Override timeout for a single call
-term.WaitFor(crawler.Text("Done"), crawler.WithinTimeout(30*time.Second))
+term.WaitFor(strider.Text("Done"), strider.WithinTimeout(30*time.Second))
 
 // Override poll interval for a single call
-term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(100*time.Millisecond))
+term.WaitFor(strider.Text("Done"), strider.WithWaitPollInterval(100*time.Millisecond))
 ```
 
 On timeout, `WaitFor` calls `t.Fatal` with a diagnostic message showing what
 was expected and the most recent screen captures:
 
 ```text
-terminal_test.go:42: crawler: wait-for: timed out after 5s
+terminal_test.go:42: strider: wait-for: timed out after 5s
     waiting for: screen to contain "Loading complete"
     recent screen captures (oldest to newest):
     capture 1/3:
@@ -143,7 +143,7 @@ terminal_test.go:42: crawler: wait-for: timed out after 5s
 ### Snapshot testing
 
 ```go
-term.WaitFor(crawler.Text("Welcome"))
+term.WaitFor(strider.Text("Welcome"))
 term.MatchSnapshot("welcome-screen")
 ```
 
@@ -151,7 +151,7 @@ Golden files are stored in `testdata/<test-name>-<hash>/<name>.txt`.
 Update them with:
 
 ```sh
-CRAWLER_UPDATE=1 go test ./...
+STRIDER_UPDATE=1 go test ./...
 ```
 
 ### Other operations
@@ -176,20 +176,20 @@ Subtests and `t.Parallel()` work naturally:
 func TestNavigation(t *testing.T) {
     tests := []struct {
         name string
-        key  crawler.Key
+        key  strider.Key
         want string
     }{
-        {"down moves to second item", crawler.Down, "> Item 2"},
-        {"up moves to first item", crawler.Up, "> Item 1"},
+        {"down moves to second item", strider.Down, "> Item 2"},
+        {"up moves to first item", strider.Up, "> Item 1"},
     }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
             t.Parallel()
-            term := crawler.Open(t, "./my-list-app")
-            term.WaitFor(crawler.Text("> Item 1"))
+            term := strider.Open(t, "./my-list-app")
+            term.WaitFor(strider.Text("> Item 1"))
             term.Press(tt.key)
-            term.WaitFor(crawler.Text(tt.want))
+            term.WaitFor(strider.Text(tt.want))
         })
     }
 }
@@ -197,13 +197,13 @@ func TestNavigation(t *testing.T) {
 
 ## Documentation
 
-- [Package reference](https://pkg.go.dev/github.com/cboone/crawler) -- full API on pkg.go.dev
+- [Package reference](https://pkg.go.dev/github.com/cboone/strider) -- full API on pkg.go.dev
 - [Getting started](docs/GETTING-STARTED.md) -- first-test tutorial
 - [Matchers in depth](docs/MATCHERS.md) -- all built-in matchers, composition, and custom matchers
 - [Snapshot testing](docs/SNAPSHOTS.md) -- golden-file testing guide
 - [Recipes and patterns](docs/PATTERNS.md) -- common testing scenarios with complete examples
 - [Troubleshooting](docs/TROUBLESHOOTING.md) -- debugging failures and CI setup
-- [Architecture](docs/ARCHITECTURE.md) -- how crawler works under the hood
+- [Architecture](docs/ARCHITECTURE.md) -- how strider works under the hood
 
 ## Requirements
 
@@ -214,7 +214,7 @@ func TestNavigation(t *testing.T) {
 The tmux binary is located by checking, in order:
 
 1. `WithTmuxPath` option
-2. `CRAWLER_TMUX` environment variable
+2. `STRIDER_TMUX` environment variable
 3. `$PATH` lookup
 
 ## How it works
@@ -227,8 +227,8 @@ All operations (`capture-pane`, `send-keys`, `resize-window`) go through the
 Go test process
 +-------------------------------------------------+
 |  func TestFoo(t *testing.T) {                   |
-|      term := crawler.Open(t, ...)               |---- tmux new-session -d ...
-|      term.WaitFor(crawler.Text("hello"))        |---- tmux capture-pane -p
+|      term := strider.Open(t, ...)               |---- tmux new-session -d ...
+|      term.WaitFor(strider.Text("hello"))        |---- tmux capture-pane -p
 |      term.Type("world")                         |---- tmux send-keys -l ...
 |  }                                              |
 +-------------------------------------------------+

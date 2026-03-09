@@ -1,40 +1,40 @@
-package crawler_test
+package strider_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/cboone/crawler"
+	"github.com/cboone/strider"
 )
 
 func ExampleOpen() {
 	_ = func(t *testing.T) {
-		term := crawler.Open(t, "./my-app",
-			crawler.WithArgs("--verbose"),
-			crawler.WithSize(120, 40),
-			crawler.WithTimeout(10*time.Second),
+		term := strider.Open(t, "./my-app",
+			strider.WithArgs("--verbose"),
+			strider.WithSize(120, 40),
+			strider.WithTimeout(10*time.Second),
 		)
-		term.WaitFor(crawler.Text("Welcome"))
+		term.WaitFor(strider.Text("Welcome"))
 	}
 }
 
 func ExampleTerminal_WaitFor() {
 	_ = func(t *testing.T) {
-		term := crawler.Open(t, "./my-app")
-		term.WaitFor(crawler.Text("Name:"))
+		term := strider.Open(t, "./my-app")
+		term.WaitFor(strider.Text("Name:"))
 		term.Type("Alice")
-		term.Press(crawler.Enter)
-		term.WaitFor(crawler.All(
-			crawler.Text("Saved"),
-			crawler.Not(crawler.Text("Error")),
+		term.Press(strider.Enter)
+		term.WaitFor(strider.All(
+			strider.Text("Saved"),
+			strider.Not(strider.Text("Error")),
 		))
 	}
 }
 
 func ExampleTerminal_MatchSnapshot() {
 	_ = func(t *testing.T) {
-		term := crawler.Open(t, "./my-app")
-		term.WaitFor(crawler.Text("Dashboard"))
+		term := strider.Open(t, "./my-app")
+		term.WaitFor(strider.Text("Dashboard"))
 		term.MatchSnapshot("dashboard")
 	}
 }

@@ -4,8 +4,8 @@ A cookbook of common TUI testing scenarios with complete examples. Each recipe
 is self-contained.
 
 For API details, see the [README](../README.md) and
-the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## Basic interaction: Type / Press / WaitFor
 
@@ -14,13 +14,13 @@ for the result.
 
 ```go
 func TestBasicInteraction(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
-    term.WaitFor(crawler.Text("Enter name:"))
+    term := strider.Open(t, "./my-app")
+    term.WaitFor(strider.Text("Enter name:"))
 
     term.Type("Alice")
-    term.Press(crawler.Enter)
+    term.Press(strider.Enter)
 
-    term.WaitFor(crawler.Text("Hello, Alice!"))
+    term.WaitFor(strider.Text("Hello, Alice!"))
 }
 ```
 
@@ -33,20 +33,20 @@ Tab between fields, type values, and submit:
 
 ```go
 func TestFormSubmit(t *testing.T) {
-    term := crawler.Open(t, "./my-form-app")
-    term.WaitFor(crawler.Text("Name:"))
+    term := strider.Open(t, "./my-form-app")
+    term.WaitFor(strider.Text("Name:"))
 
     term.Type("Alice")
-    term.Press(crawler.Tab)
+    term.Press(strider.Tab)
 
-    term.WaitFor(crawler.Text("Email:"))
+    term.WaitFor(strider.Text("Email:"))
     term.Type("alice@example.com")
-    term.Press(crawler.Tab)
+    term.Press(strider.Tab)
 
-    term.WaitFor(crawler.Text("Submit"))
-    term.Press(crawler.Enter)
+    term.WaitFor(strider.Text("Submit"))
+    term.Press(strider.Enter)
 
-    term.WaitFor(crawler.Text("Saved successfully"))
+    term.WaitFor(strider.Text("Saved successfully"))
 }
 ```
 
@@ -56,17 +56,17 @@ Navigate with arrow keys, select with Enter:
 
 ```go
 func TestMenuSelection(t *testing.T) {
-    term := crawler.Open(t, "./my-menu-app")
-    term.WaitFor(crawler.Text("> Option 1"))
+    term := strider.Open(t, "./my-menu-app")
+    term.WaitFor(strider.Text("> Option 1"))
 
-    term.Press(crawler.Down)
-    term.WaitFor(crawler.Text("> Option 2"))
+    term.Press(strider.Down)
+    term.WaitFor(strider.Text("> Option 2"))
 
-    term.Press(crawler.Down)
-    term.WaitFor(crawler.Text("> Option 3"))
+    term.Press(strider.Down)
+    term.WaitFor(strider.Text("> Option 3"))
 
-    term.Press(crawler.Enter)
-    term.WaitFor(crawler.Text("Selected: Option 3"))
+    term.Press(strider.Enter)
+    term.WaitFor(strider.Text("Selected: Option 3"))
 }
 ```
 
@@ -76,10 +76,10 @@ Send `Ctrl('c')` and verify the process exits cleanly:
 
 ```go
 func TestGracefulShutdown(t *testing.T) {
-    term := crawler.Open(t, "./my-server")
-    term.WaitFor(crawler.Text("Server running"))
+    term := strider.Open(t, "./my-server")
+    term.WaitFor(strider.Text("Server running"))
 
-    term.Press(crawler.Ctrl('c'))
+    term.Press(strider.Ctrl('c'))
 
     code := term.WaitExit()
     if code != 0 {
@@ -95,8 +95,8 @@ for tests where the binary is expected to finish:
 
 ```go
 func TestExitZero(t *testing.T) {
-    term := crawler.Open(t, "./my-cli", crawler.WithArgs("--version"))
-    term.WaitFor(crawler.Text("v1.0.0"))
+    term := strider.Open(t, "./my-cli", strider.WithArgs("--version"))
+    term.WaitFor(strider.Text("v1.0.0"))
 
     code := term.WaitExit()
     if code != 0 {
@@ -105,8 +105,8 @@ func TestExitZero(t *testing.T) {
 }
 
 func TestExitNonZero(t *testing.T) {
-    term := crawler.Open(t, "./my-cli", crawler.WithArgs("--bad-flag"))
-    term.WaitFor(crawler.Text("unknown flag"))
+    term := strider.Open(t, "./my-cli", strider.WithArgs("--bad-flag"))
+    term.WaitFor(strider.Text("unknown flag"))
 
     code := term.WaitExit()
     if code == 0 {
@@ -121,13 +121,13 @@ func TestExitNonZero(t *testing.T) {
 
 ```go
 func TestResize(t *testing.T) {
-    term := crawler.Open(t, "./my-app", crawler.WithSize(80, 24))
-    term.WaitFor(crawler.Text("Dashboard"))
+    term := strider.Open(t, "./my-app", strider.WithSize(80, 24))
+    term.WaitFor(strider.Text("Dashboard"))
 
     term.Resize(120, 40)
 
     // Wait for the app to re-render at the new size.
-    term.WaitFor(crawler.Text("Dashboard"))
+    term.WaitFor(strider.Text("Dashboard"))
 }
 ```
 
@@ -141,11 +141,11 @@ scrolled off the visible screen:
 
 ```go
 func TestScrollback(t *testing.T) {
-    term := crawler.Open(t, "./my-logger",
-        crawler.WithSize(80, 10),
-        crawler.WithHistoryLimit(50000),
+    term := strider.Open(t, "./my-logger",
+        strider.WithSize(80, 10),
+        strider.WithHistoryLimit(50000),
     )
-    term.WaitFor(crawler.Text("Log output complete"))
+    term.WaitFor(strider.Text("Log output complete"))
 
     scrollback := term.Scrollback()
 
@@ -172,24 +172,24 @@ own isolated tmux session:
 func TestNavigation(t *testing.T) {
     tests := []struct {
         name string
-        keys []crawler.Key
+        keys []strider.Key
         want string
     }{
-        {"move down once", []crawler.Key{crawler.Down}, "> Item 2"},
-        {"move down twice", []crawler.Key{crawler.Down, crawler.Down}, "> Item 3"},
-        {"move down then up", []crawler.Key{crawler.Down, crawler.Up}, "> Item 1"},
+        {"move down once", []strider.Key{strider.Down}, "> Item 2"},
+        {"move down twice", []strider.Key{strider.Down, strider.Down}, "> Item 3"},
+        {"move down then up", []strider.Key{strider.Down, strider.Up}, "> Item 1"},
     }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
             t.Parallel()
-            term := crawler.Open(t, "./my-list-app")
-            term.WaitFor(crawler.Text("> Item 1"))
+            term := strider.Open(t, "./my-list-app")
+            term.WaitFor(strider.Text("> Item 1"))
 
             for _, key := range tt.keys {
                 term.Press(key)
             }
-            term.WaitFor(crawler.Text(tt.want))
+            term.WaitFor(strider.Text(tt.want))
         })
     }
 }
@@ -210,13 +210,13 @@ func TestParallel(t *testing.T) {
         i := i
         t.Run(fmt.Sprintf("instance-%d", i), func(t *testing.T) {
             t.Parallel()
-            term := crawler.Open(t, "./my-app")
-            term.WaitFor(crawler.Text("Ready"))
+            term := strider.Open(t, "./my-app")
+            term.WaitFor(strider.Text("Ready"))
 
             msg := fmt.Sprintf("parallel-%d", i)
             term.Type(msg)
-            term.Press(crawler.Enter)
-            term.WaitFor(crawler.Text(msg))
+            term.Press(strider.Enter)
+            term.WaitFor(strider.Text(msg))
         })
     }
 }
@@ -228,17 +228,17 @@ Pass environment variables with `WithEnv`:
 
 ```go
 func TestNoColor(t *testing.T) {
-    term := crawler.Open(t, "./my-app",
-        crawler.WithEnv("NO_COLOR=1"),
+    term := strider.Open(t, "./my-app",
+        strider.WithEnv("NO_COLOR=1"),
     )
-    term.WaitFor(crawler.Text("Ready"))
+    term.WaitFor(strider.Text("Ready"))
 }
 
 func TestCustomConfig(t *testing.T) {
-    term := crawler.Open(t, "./my-app",
-        crawler.WithEnv("APP_CONFIG=/tmp/test-config.json", "DEBUG=1"),
+    term := strider.Open(t, "./my-app",
+        strider.WithEnv("APP_CONFIG=/tmp/test-config.json", "DEBUG=1"),
     )
-    term.WaitFor(crawler.Text("Config loaded"))
+    term.WaitFor(strider.Text("Config loaded"))
 }
 ```
 
@@ -254,10 +254,10 @@ func TestWorkingDir(t *testing.T) {
     dir := t.TempDir()
     // ... set up files in dir ...
 
-    term := crawler.Open(t, "./my-app",
-        crawler.WithDir(dir),
+    term := strider.Open(t, "./my-app",
+        strider.WithDir(dir),
     )
-    term.WaitFor(crawler.Text("Files loaded"))
+    term.WaitFor(strider.Text("Files loaded"))
 }
 ```
 
@@ -268,8 +268,8 @@ assertions on the same captured state:
 
 ```go
 func TestWaitForScreen(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
-    screen := term.WaitForScreen(crawler.Text("Results"))
+    term := strider.Open(t, "./my-app")
+    screen := term.WaitForScreen(strider.Text("Results"))
 
     // The screen is guaranteed to contain "Results" at this point.
     // Do additional checks on the same capture.
@@ -297,12 +297,12 @@ cover your needs:
 
 ```go
 func TestSendKeys(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
-    term.WaitFor(crawler.Text("Ready"))
+    term := strider.Open(t, "./my-app")
+    term.WaitFor(strider.Text("Ready"))
 
     // Send raw tmux key names.
     term.SendKeys("h", "e", "l", "l", "o")
-    term.WaitFor(crawler.Text("hello"))
+    term.WaitFor(strider.Text("hello"))
 }
 ```
 

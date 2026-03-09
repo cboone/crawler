@@ -1,4 +1,4 @@
-package crawler
+package strider
 
 import "time"
 
@@ -62,7 +62,7 @@ func WithPollInterval(d time.Duration) Option {
 }
 
 // WithTmuxPath sets the path to the tmux binary. Defaults to "tmux"
-// (resolved via $PATH). The CRAWLER_TMUX environment variable can also
+// (resolved via $PATH). The STRIDER_TMUX environment variable can also
 // be used as a fallback before the default.
 func WithTmuxPath(path string) Option {
 	return func(o *options) {

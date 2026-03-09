@@ -6,8 +6,8 @@ assertions for each piece of text, you capture the entire screen and compare it
 against a committed file.
 
 For API overview and usage examples, see the [README](../README.md). For
-detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## When to use snapshots
 
@@ -29,7 +29,7 @@ There are two ways to snapshot a screen:
 Captures the current screen and compares it to the golden file in one step:
 
 ```go
-term.WaitFor(crawler.Text("Dashboard"))
+term.WaitFor(strider.Text("Dashboard"))
 term.MatchSnapshot("dashboard")
 ```
 
@@ -39,7 +39,7 @@ Snapshots an already-captured screen. This is useful when you get a screen back
 from `WaitForScreen` and want to snapshot it:
 
 ```go
-screen := term.WaitForScreen(crawler.Text("Results"))
+screen := term.WaitForScreen(strider.Text("Results"))
 // Do some assertions on the screen...
 screen.MatchSnapshot(t, "results-page")
 ```
@@ -74,7 +74,7 @@ testdata/TestDashboard_admin_view-a1b2c3d4/main-screen.txt
 
 ## Content normalization
 
-Before writing or comparing, crawler normalizes the screen content:
+Before writing or comparing, strider normalizes the screen content:
 
 1. Trailing spaces are trimmed from each line.
 2. Trailing blank lines are removed.
@@ -88,8 +88,8 @@ Golden files don't exist until you create them. On the first run,
 `MatchSnapshot` fails with a message telling you to create the file:
 
 ```
-crawler: snapshot: golden file not found: testdata/TestFoo-a1b2c3d4/my-screen.txt
-Run with CRAWLER_UPDATE=1 to create it.
+strider: snapshot: golden file not found: testdata/TestFoo-a1b2c3d4/my-screen.txt
+Run with STRIDER_UPDATE=1 to create it.
 
 Actual screen:
 <screen content>
@@ -98,10 +98,10 @@ Actual screen:
 To create or update golden files:
 
 ```sh
-CRAWLER_UPDATE=1 go test ./...
+STRIDER_UPDATE=1 go test ./...
 ```
 
-The `CRAWLER_UPDATE` variable is recognized as truthy when its exact lowercase
+The `STRIDER_UPDATE` variable is recognized as truthy when its exact lowercase
 value is `1`, `true`, or `yes`. Any other value (including empty) is treated as
 false.
 
@@ -118,9 +118,9 @@ Then commit the golden files alongside your test code.
 When the screen doesn't match the golden file:
 
 ```
-crawler: snapshot: mismatch for "dashboard"
+strider: snapshot: mismatch for "dashboard"
 Golden file: testdata/TestDashboard-a1b2c3d4/dashboard.txt
-Run with CRAWLER_UPDATE=1 to update.
+Run with STRIDER_UPDATE=1 to update.
 
 --- golden ---
 Dashboard v1.0
@@ -156,7 +156,7 @@ show exactly what changed in the TUI output.
 
 ## CI considerations
 
-Never run tests with `CRAWLER_UPDATE=1` in CI. If you do, golden files will be
+Never run tests with `STRIDER_UPDATE=1` in CI. If you do, golden files will be
 silently created or overwritten and the test will always pass, defeating the
 purpose.
 
@@ -169,7 +169,7 @@ go test ./...
 If a snapshot is out of date, the test fails and the developer updates locally:
 
 ```sh
-CRAWLER_UPDATE=1 go test ./...
+STRIDER_UPDATE=1 go test ./...
 git diff testdata/
 git add testdata/
 git commit -m "update golden files"

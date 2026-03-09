@@ -1,4 +1,4 @@
-package crawler
+package strider
 
 import (
 	"crypto/sha256"
@@ -12,7 +12,7 @@ import (
 // MatchSnapshot compares the current screen against a golden file
 // stored in testdata/<sanitized-test-name>/<sanitized-name>.txt.
 //
-// Set CRAWLER_UPDATE=1 to create or update golden files.
+// Set STRIDER_UPDATE=1 to create or update golden files.
 func (term *Terminal) MatchSnapshot(name string) {
 	term.t.Helper()
 	scr := term.Screen()
@@ -37,10 +37,10 @@ func (s *Screen) MatchSnapshot(t testing.TB, name string) {
 	if shouldUpdate() {
 		// Create/update golden file.
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			t.Fatalf("crawler: snapshot: failed to create directory: %v", err)
+			t.Fatalf("strider: snapshot: failed to create directory: %v", err)
 		}
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatalf("crawler: snapshot: failed to write golden file: %v", err)
+			t.Fatalf("strider: snapshot: failed to write golden file: %v", err)
 		}
 		return
 	}
@@ -49,13 +49,13 @@ func (s *Screen) MatchSnapshot(t testing.TB, name string) {
 	golden, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			t.Fatalf("crawler: snapshot: golden file not found: %s\nRun with CRAWLER_UPDATE=1 to create it.\n\nActual screen:\n%s", path, content)
+			t.Fatalf("strider: snapshot: golden file not found: %s\nRun with STRIDER_UPDATE=1 to create it.\n\nActual screen:\n%s", path, content)
 		}
-		t.Fatalf("crawler: snapshot: failed to read golden file: %v", err)
+		t.Fatalf("strider: snapshot: failed to read golden file: %v", err)
 	}
 
 	if string(golden) != content {
-		t.Fatalf("crawler: snapshot: mismatch for %q\nGolden file: %s\nRun with CRAWLER_UPDATE=1 to update.\n\n--- golden ---\n%s\n--- actual ---\n%s",
+		t.Fatalf("strider: snapshot: mismatch for %q\nGolden file: %s\nRun with STRIDER_UPDATE=1 to update.\n\n--- golden ---\n%s\n--- actual ---\n%s",
 			name, path, string(golden), content)
 	}
 }
@@ -93,9 +93,9 @@ func normalizeForSnapshot(raw string) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// shouldUpdate returns true if CRAWLER_UPDATE is set to a truthy value.
+// shouldUpdate returns true if STRIDER_UPDATE is set to a truthy value.
 func shouldUpdate() bool {
-	v := os.Getenv("CRAWLER_UPDATE")
+	v := os.Getenv("STRIDER_UPDATE")
 	return v == "1" || v == "true" || v == "yes"
 }
 

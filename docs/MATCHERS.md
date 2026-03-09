@@ -1,12 +1,12 @@
 # Matchers in depth
 
-Matchers are the core assertion mechanism in crawler. Every call to `WaitFor`
+Matchers are the core assertion mechanism in strider. Every call to `WaitFor`
 or `WaitForScreen` takes a matcher that is polled against screen captures until
 it succeeds or the timeout expires.
 
 For the API overview table, see the [README](../README.md). For function
-signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## How matchers work
 
@@ -31,7 +31,7 @@ writing a function with this signature -- no interfaces to implement.
 Matches if the screen contains the given substring anywhere.
 
 ```go
-term.WaitFor(crawler.Text("Welcome"))
+term.WaitFor(strider.Text("Welcome"))
 ```
 
 Description: `screen to contain "Welcome"`
@@ -42,8 +42,8 @@ Matches if the full screen content matches the regular expression. The pattern
 is compiled once when `Regexp` is called. An invalid pattern causes a panic.
 
 ```go
-term.WaitFor(crawler.Regexp(`\d+ items loaded`))
-term.WaitFor(crawler.Regexp(`(?i)error`))
+term.WaitFor(strider.Regexp(`\d+ items loaded`))
+term.WaitFor(strider.Regexp(`(?i)error`))
 ```
 
 Description: `screen to match regexp "\\d+ items loaded"`
@@ -56,7 +56,7 @@ Matches if the given line (0-indexed) exactly equals the string after trimming
 trailing spaces from the screen line.
 
 ```go
-term.WaitFor(crawler.Line(0, "My Application v1.0"))
+term.WaitFor(strider.Line(0, "My Application v1.0"))
 ```
 
 Description: `line 0 to equal "My Application v1.0"`
@@ -68,7 +68,7 @@ Returns `false` (does not panic) if the line index is out of range.
 Matches if the given line (0-indexed) contains the substring.
 
 ```go
-term.WaitFor(crawler.LineContains(2, "Status: OK"))
+term.WaitFor(strider.LineContains(2, "Status: OK"))
 ```
 
 Description: `line 2 to contain "Status: OK"`
@@ -87,7 +87,7 @@ Matches if the cursor is at the given row and column. Both are 0-indexed, and
 the convention is `(row, col)`.
 
 ```go
-term.WaitFor(crawler.Cursor(0, 6))
+term.WaitFor(strider.Cursor(0, 6))
 ```
 
 Description: `cursor at row=0, col=6`
@@ -103,8 +103,8 @@ Matches when the screen has no visible content (`strings.TrimSpace` returns an
 empty string).
 
 ```go
-term.WaitFor(crawler.Empty())
-term.WaitFor(crawler.Not(crawler.Empty()))
+term.WaitFor(strider.Empty())
+term.WaitFor(strider.Not(strider.Empty()))
 ```
 
 Description: `screen to be empty`
@@ -116,7 +116,7 @@ Description: `screen to be empty`
 Inverts a matcher.
 
 ```go
-term.WaitFor(crawler.Not(crawler.Text("Loading...")))
+term.WaitFor(strider.Not(strider.Text("Loading...")))
 ```
 
 Description: `NOT(screen to contain "Loading...")`
@@ -127,10 +127,10 @@ Matches when every provided matcher matches. Short-circuits on the first
 failure.
 
 ```go
-term.WaitFor(crawler.All(
-    crawler.Text("Status: OK"),
-    crawler.Not(crawler.Text("Error")),
-    crawler.LineContains(0, "Dashboard"),
+term.WaitFor(strider.All(
+    strider.Text("Status: OK"),
+    strider.Not(strider.Text("Error")),
+    strider.LineContains(0, "Dashboard"),
 ))
 ```
 
@@ -142,9 +142,9 @@ Matches when at least one provided matcher matches. Short-circuits on the first
 success.
 
 ```go
-term.WaitFor(crawler.Any(
-    crawler.Text("Success"),
-    crawler.Text("Already exists"),
+term.WaitFor(strider.Any(
+    strider.Text("Success"),
+    strider.Text("Already exists"),
 ))
 ```
 
@@ -160,8 +160,8 @@ three practical examples.
 Check whether a rectangular region of the screen contains specific text:
 
 ```go
-func Region(startRow, startCol, endRow, endCol int, want string) crawler.Matcher {
-    return func(s *crawler.Screen) (bool, string) {
+func Region(startRow, startCol, endRow, endCol int, want string) strider.Matcher {
+    return func(s *strider.Screen) (bool, string) {
         desc := fmt.Sprintf("region [%d:%d]-[%d:%d] to contain %q",
             startRow, startCol, endRow, endCol, want)
         lines := s.Lines()
@@ -189,8 +189,8 @@ func Region(startRow, startCol, endRow, endCol int, want string) crawler.Matcher
 Assert that a substring appears at least N times:
 
 ```go
-func AtLeast(n int, substr string) crawler.Matcher {
-    return func(s *crawler.Screen) (bool, string) {
+func AtLeast(n int, substr string) strider.Matcher {
+    return func(s *strider.Screen) (bool, string) {
         count := strings.Count(s.String(), substr)
         desc := fmt.Sprintf("screen to contain %q at least %d times (found %d)",
             substr, n, count)
@@ -205,9 +205,9 @@ Verify that a table has a specific number of data rows (lines matching a
 pattern):
 
 ```go
-func TableRows(pattern string, minRows int) crawler.Matcher {
+func TableRows(pattern string, minRows int) strider.Matcher {
     re := regexp.MustCompile(pattern)
-    return func(s *crawler.Screen) (bool, string) {
+    return func(s *strider.Screen) (bool, string) {
         count := 0
         for _, line := range s.Lines() {
             if re.MatchString(line) {

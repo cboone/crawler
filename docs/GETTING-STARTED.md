@@ -1,9 +1,9 @@
 # Getting started
 
-This guide walks you through writing and running your first crawler test. For a
+This guide walks you through writing and running your first strider test. For a
 concise API overview, see the [README](../README.md). For detailed function
-signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## Prerequisites
 
@@ -21,13 +21,13 @@ sudo apt-get install tmux
 brew install tmux
 ```
 
-## Install crawler
+## Install strider
 
 ```sh
-go get github.com/cboone/crawler
+go get github.com/cboone/strider
 ```
 
-There are no other dependencies. crawler uses the Go standard library only.
+There are no other dependencies. strider uses the Go standard library only.
 
 ## Write your first test
 
@@ -44,23 +44,23 @@ package myapp_test
 import (
     "testing"
 
-    "github.com/cboone/crawler"
+    "github.com/cboone/strider"
 )
 
 func TestMyApp(t *testing.T) {
     // Open starts the binary in an isolated tmux session.
     // Cleanup is automatic -- no defer or Close() needed.
-    term := crawler.Open(t, "./my-app")
+    term := strider.Open(t, "./my-app")
 
     // Wait for the greeting to appear.
-    term.WaitFor(crawler.Text("Hello!"))
+    term.WaitFor(strider.Text("Hello!"))
 
     // Type some input and press Enter.
     term.Type("world")
-    term.Press(crawler.Enter)
+    term.Press(strider.Enter)
 
     // Wait for the response.
-    term.WaitFor(crawler.Text("world"))
+    term.WaitFor(strider.Text("world"))
 }
 ```
 
@@ -78,11 +78,11 @@ automatically (not fail).
 
 ## Understanding failure output
 
-When `WaitFor` times out, crawler reports what it was waiting for and shows the
+When `WaitFor` times out, strider reports what it was waiting for and shows the
 most recent screen captures in a box-bordered format:
 
 ```
-app_test.go:15: crawler: wait-for: timed out after 5s
+app_test.go:15: strider: wait-for: timed out after 5s
     waiting for: screen to contain "Hello!"
     recent screen captures (oldest to newest):
     capture 1/3:
@@ -106,7 +106,7 @@ If the process exits before the matcher succeeds, you get an immediate failure
 with the exit status:
 
 ```
-app_test.go:15: crawler: wait-for: process exited unexpectedly (status 1)
+app_test.go:15: strider: wait-for: process exited unexpectedly (status 1)
     waiting for: screen to contain "Hello!"
     recent screen captures (oldest to newest):
     ...
@@ -117,15 +117,15 @@ app_test.go:15: crawler: wait-for: process exited unexpectedly (status 1)
 `Open` accepts functional options to customize the session:
 
 ```go
-term := crawler.Open(t, "./my-app",
-    crawler.WithSize(120, 40),
-    crawler.WithTimeout(10 * time.Second),
-    crawler.WithPollInterval(100 * time.Millisecond),
-    crawler.WithEnv("NO_COLOR=1", "TERM=xterm"),
-    crawler.WithArgs("--verbose", "--port", "8080"),
-    crawler.WithDir("/tmp/workdir"),
-    crawler.WithHistoryLimit(50000),
-    crawler.WithTmuxPath("/usr/local/bin/tmux"),
+term := strider.Open(t, "./my-app",
+    strider.WithSize(120, 40),
+    strider.WithTimeout(10 * time.Second),
+    strider.WithPollInterval(100 * time.Millisecond),
+    strider.WithEnv("NO_COLOR=1", "TERM=xterm"),
+    strider.WithArgs("--verbose", "--port", "8080"),
+    strider.WithDir("/tmp/workdir"),
+    strider.WithHistoryLimit(50000),
+    strider.WithTmuxPath("/usr/local/bin/tmux"),
 )
 ```
 
@@ -146,8 +146,8 @@ Individual `WaitFor` / `WaitForScreen` / `WaitExit` calls can override the
 timeout and poll interval with per-call options:
 
 ```go
-term.WaitFor(crawler.Text("Done"), crawler.WithinTimeout(30*time.Second))
-term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(200*time.Millisecond))
+term.WaitFor(strider.Text("Done"), strider.WithinTimeout(30*time.Second))
+term.WaitFor(strider.Text("Done"), strider.WithWaitPollInterval(200*time.Millisecond))
 ```
 
 ## Next steps
@@ -158,4 +158,4 @@ term.WaitFor(crawler.Text("Done"), crawler.WithWaitPollInterval(200*time.Millise
 - [Recipes and patterns](PATTERNS.md) -- common testing scenarios with complete
   examples
 - [Troubleshooting](TROUBLESHOOTING.md) -- debugging failures and CI setup
-- [Architecture](ARCHITECTURE.md) -- how crawler works under the hood
+- [Architecture](ARCHITECTURE.md) -- how strider works under the hood

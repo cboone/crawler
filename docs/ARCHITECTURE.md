@@ -1,11 +1,11 @@
 # Architecture
 
-How crawler works internally. This guide is for contributors and users who want
+How strider works internally. This guide is for contributors and users who want
 to understand what happens behind the API.
 
 For API overview and usage examples, see the [README](../README.md). For
-detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## Why tmux
 
@@ -24,7 +24,7 @@ There are several approaches to providing this:
 - **tmux**: already a complete, battle-tested terminal multiplexer with a CLI
   for programmatic control. Available on all Unix-like systems.
 
-crawler uses tmux because it provides everything needed -- PTY management,
+strider uses tmux because it provides everything needed -- PTY management,
 screen capture, key injection, resize handling -- through a stable CLI. No
 terminal emulation code to maintain, no framework lock-in, and users already
 have tmux or can install it easily.
@@ -38,10 +38,10 @@ Each call to `Open` creates a dedicated tmux server by using a unique socket
 path. The socket path is generated under `os.TempDir()`:
 
 ```
-/tmp/crawler-TestMyApp-a1b2c3d4.sock
+/tmp/strider-TestMyApp-a1b2c3d4.sock
 ```
 
-The format is `crawler-<sanitized-test-name>-<random-suffix>.sock`. Because
+The format is `strider-<sanitized-test-name>-<random-suffix>.sock`. Because
 each test gets its own tmux server (not just its own session within a shared
 server), there is complete isolation:
 
@@ -53,7 +53,7 @@ The server is killed during `t.Cleanup`, along with the temporary config file.
 
 ## The adapter layer
 
-`tmux.go` is the bridge between the public API (`crawler.go`) and the
+`tmux.go` is the bridge between the public API (`strider.go`) and the
 low-level tmux command runner (`internal/tmuxcli`). All tmux-specific details
 are contained in `tmux.go`:
 
@@ -66,7 +66,7 @@ are contained in `tmux.go`:
 - Window resizing (`resize-window`)
 - Pane state queries (alive/dead, exit status)
 
-The public API in `crawler.go` calls functions in `tmux.go` and never
+The public API in `strider.go` calls functions in `tmux.go` and never
 interacts with `tmuxcli` directly. This keeps the boundary clean: if the tmux
 interaction needs to change, only `tmux.go` is affected.
 
@@ -82,8 +82,8 @@ set-option -g status off
 ```
 
 - **remain-on-exit on**: keeps the pane open after the process exits, so
-  crawler can still read the exit status and final screen content. Without
-  this, a fast-exiting process would disappear before crawler can query it.
+  strider can still read the exit status and final screen content. Without
+  this, a fast-exiting process would disappear before strider can query it.
 - **status off**: disables the tmux status bar so the terminal dimensions
   match the requested size exactly. Without this, the status bar would consume
   one row.
@@ -121,7 +121,7 @@ display-message -p -t <pane> "#{cursor_x} #{cursor_y}"
 ```
 
 This returns `x y` coordinates (note: tmux uses x for column, y for row).
-crawler swaps these to `(row, col)` for the `Cursor` matcher's `(row, col)`
+strider swaps these to `(row, col)` for the `Cursor` matcher's `(row, col)`
 convention.
 
 ### Scrollback
@@ -159,7 +159,7 @@ methods.
 
 ### Failure diagnostics
 
-On timeout, crawler keeps the last 3 screen captures and includes them in the
+On timeout, strider keeps the last 3 screen captures and includes them in the
 failure message. This shows how the screen evolved during the wait, making it
 easier to diagnose what the program was doing.
 
@@ -169,13 +169,13 @@ instead of running a matcher.
 ## Socket path generation
 
 Socket paths must stay within Unix domain socket limits (104 bytes on macOS,
-108 on Linux). crawler handles this with:
+108 on Linux). strider handles this with:
 
 1. **Sanitize** the test name: keep `[A-Za-z0-9.-]`, replace everything else
    with `_`.
 2. **Truncate** to 60 characters.
 3. **Append** a random suffix (4 random bytes, hex-encoded = 8 characters).
-4. **Format**: `crawler-<sanitized>-<suffix>.sock`
+4. **Format**: `strider-<sanitized>-<suffix>.sock`
 5. Place in `os.TempDir()` (typically `/tmp`).
 
 If the path already exists (collision), regenerate the random suffix. Up to 10
@@ -183,23 +183,23 @@ attempts are made before failing.
 
 ## Error philosophy
 
-crawler uses `t.Fatal` for errors and `t.Skip` for missing prerequisites:
+strider uses `t.Fatal` for errors and `t.Skip` for missing prerequisites:
 
 - **t.Fatal**: tmux command failures, timeout, unexpected process exit,
   explicitly-configured tmux that's too old.
 - **t.Skip**: tmux not found in PATH, auto-detected tmux version too old.
 
-No crawler method returns an `error`. This keeps test code clean -- users never
-write `if err != nil` for crawler calls. Errors format as
-`crawler: <operation>: <reason>`.
+No strider method returns an `error`. This keeps test code clean -- users never
+write `if err != nil` for strider calls. Errors format as
+`strider: <operation>: <reason>`.
 
 ## Limitations
 
-- **Plain text only**: crawler captures text content, not colors, styles, or
+- **Plain text only**: strider captures text content, not colors, styles, or
   other ANSI attributes. Tests cannot assert on foreground/background colors
   or bold/underline.
 - **No mouse**: tmux `send-keys` does not support mouse events. Mouse-driven
-  TUIs cannot be tested with crawler.
+  TUIs cannot be tested with strider.
 - **No multi-pane**: each test uses a single pane. Testing multi-pane layouts
   is not supported.
 - **No Windows**: tmux does not run on Windows. Tests are not supported on Windows and may fail to build.

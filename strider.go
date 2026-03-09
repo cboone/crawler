@@ -1,4 +1,4 @@
-package crawler
+package strider
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cboone/crawler/internal/tmuxcli"
+	"github.com/cboone/strider/internal/tmuxcli"
 )
 
 // Terminal is a handle to a TUI program running inside a tmux session.
@@ -69,13 +69,13 @@ func Open(t testing.TB, binary string, userOpts ...Option) *Terminal {
 
 	// Wait for the session to be ready.
 	if err := runner.WaitForSession(5 * time.Second); err != nil {
-		t.Fatalf("crawler: open: %v", err)
+		t.Fatalf("strider: open: %v", err)
 	}
 
 	// Get the pane ID.
 	output, err := runner.Run("list-panes", "-F", "#{pane_id}")
 	if err != nil {
-		t.Fatalf("crawler: open: failed to get pane ID: %v", err)
+		t.Fatalf("strider: open: failed to get pane ID: %v", err)
 	}
 	pane := strings.TrimSpace(output)
 
@@ -101,7 +101,7 @@ func (term *Terminal) SendKeys(keys ...string) {
 	term.t.Helper()
 	term.requireAlive("send-keys")
 	if err := sendKeys(term.runner, term.pane, keys); err != nil {
-		term.t.Fatalf("crawler: send-keys: %v", err)
+		term.t.Fatalf("strider: send-keys: %v", err)
 	}
 }
 
@@ -113,7 +113,7 @@ func (term *Terminal) Type(s string) {
 	// Send the string literally via tmux send-keys -l (literal mode).
 	args := []string{"send-keys", "-t", term.pane, "-l", s}
 	if _, err := term.runner.Run(args...); err != nil {
-		term.t.Fatalf("crawler: send-keys: %v", err)
+		term.t.Fatalf("strider: send-keys: %v", err)
 	}
 }
 
@@ -140,7 +140,7 @@ func (term *Terminal) captureScreen(op string) *Screen {
 
 	raw, err := capturePaneContent(term.runner, term.pane)
 	if err != nil {
-		term.t.Fatalf("crawler: %s: %v", op, err)
+		term.t.Fatalf("strider: %s: %v", op, err)
 	}
 
 	scr := newScreen(raw, term.opts.width, term.opts.height)
@@ -199,7 +199,7 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 	if wo.timeout > 0 {
 		timeout = wo.timeout
 	} else if wo.timeout < 0 {
-		term.t.Fatalf("crawler: wait-for: negative timeout: %v", wo.timeout)
+		term.t.Fatalf("strider: wait-for: negative timeout: %v", wo.timeout)
 	}
 
 	pollInterval := term.opts.pollInterval
@@ -209,7 +209,7 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 			pollInterval = minPollInterval
 		}
 	} else if wo.pollInterval < 0 {
-		term.t.Fatalf("crawler: wait-for: negative poll interval: %v", wo.pollInterval)
+		term.t.Fatalf("strider: wait-for: negative poll interval: %v", wo.pollInterval)
 	}
 
 	deadline := time.Now().Add(timeout)
@@ -226,13 +226,13 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 			if lastScreen != nil {
 				_, lastDesc = m(lastScreen)
 			}
-			term.t.Fatalf("crawler: wait-for: process exited unexpectedly (status %d)\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
+			term.t.Fatalf("strider: wait-for: process exited unexpectedly (status %d)\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
 				state.exitStatus, lastDesc, formatRecentScreens(recentScreens))
 		}
 
 		lastScreen = term.captureScreenRaw()
 		if lastScreen == nil {
-			term.t.Fatalf("crawler: wait-for: capture failed")
+			term.t.Fatalf("strider: wait-for: capture failed")
 		}
 		recentScreens = appendRecentScreens(recentScreens, lastScreen, failureCaptureHistory)
 
@@ -243,7 +243,7 @@ func (term *Terminal) waitForInternal(m Matcher, wopts ...WaitOption) *Screen {
 		}
 
 		if time.Now().After(deadline) {
-			term.t.Fatalf("crawler: wait-for: timed out after %v\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
+			term.t.Fatalf("strider: wait-for: timed out after %v\n    waiting for: %s\n    recent screen captures (oldest to newest):\n%s",
 				timeout, lastDesc, formatRecentScreens(recentScreens))
 		}
 
@@ -265,7 +265,7 @@ func (term *Terminal) WaitExit(wopts ...WaitOption) int {
 	if wo.timeout > 0 {
 		timeout = wo.timeout
 	} else if wo.timeout < 0 {
-		term.t.Fatalf("crawler: wait-exit: negative timeout: %v", wo.timeout)
+		term.t.Fatalf("strider: wait-exit: negative timeout: %v", wo.timeout)
 	}
 
 	pollInterval := term.opts.pollInterval
@@ -275,7 +275,7 @@ func (term *Terminal) WaitExit(wopts ...WaitOption) int {
 			pollInterval = minPollInterval
 		}
 	} else if wo.pollInterval < 0 {
-		term.t.Fatalf("crawler: wait-exit: negative poll interval: %v", wo.pollInterval)
+		term.t.Fatalf("strider: wait-exit: negative poll interval: %v", wo.pollInterval)
 	}
 
 	deadline := time.Now().Add(timeout)
@@ -283,14 +283,14 @@ func (term *Terminal) WaitExit(wopts ...WaitOption) int {
 	for {
 		state, err := getPaneState(term.runner, term.pane)
 		if err != nil {
-			term.t.Fatalf("crawler: wait-exit: %v", err)
+			term.t.Fatalf("strider: wait-exit: %v", err)
 		}
 		if state.dead {
 			return state.exitStatus
 		}
 		recentScreens = appendRecentScreens(recentScreens, term.captureScreenRaw(), failureCaptureHistory)
 		if time.Now().After(deadline) {
-			term.t.Fatalf("crawler: wait-exit: timed out after %v\n    pane still alive\n    recent screen captures (oldest to newest):\n%s",
+			term.t.Fatalf("strider: wait-exit: timed out after %v\n    pane still alive\n    recent screen captures (oldest to newest):\n%s",
 				timeout, formatRecentScreens(recentScreens))
 		}
 		time.Sleep(pollInterval)
@@ -303,7 +303,7 @@ func (term *Terminal) Resize(width, height int) {
 	term.t.Helper()
 	term.requireAlive("resize")
 	if err := resizeWindow(term.runner, term.pane, width, height); err != nil {
-		term.t.Fatalf("crawler: resize: %v", err)
+		term.t.Fatalf("strider: resize: %v", err)
 	}
 	term.opts.width = width
 	term.opts.height = height
@@ -323,7 +323,7 @@ func (term *Terminal) Scrollback() *Screen {
 
 	raw, err := capturePaneScrollback(term.runner, term.pane)
 	if err != nil {
-		term.t.Fatalf("crawler: capture: scrollback: %v", err)
+		term.t.Fatalf("strider: capture: scrollback: %v", err)
 	}
 
 	lines := strings.Split(strings.TrimSuffix(raw, "\n"), "\n")
@@ -347,7 +347,7 @@ func (term *Terminal) requireAlive(op string) {
 		return
 	}
 	if state.dead {
-		term.t.Fatalf("crawler: %s: process exited unexpectedly (status %d)", op, state.exitStatus)
+		term.t.Fatalf("strider: %s: process exited unexpectedly (status %d)", op, state.exitStatus)
 	}
 }
 

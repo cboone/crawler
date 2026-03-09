@@ -1,4 +1,4 @@
-package crawler_test
+package strider_test
 
 import (
 	"fmt"
@@ -10,19 +10,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cboone/crawler"
+	"github.com/cboone/strider"
 )
 
 var testBinary string
 
 const (
-	waitForTimeoutHelperEnv  = "CRAWLER_WAITFOR_TIMEOUT_HELPER"
-	waitExitTimeoutHelperEnv = "CRAWLER_WAITEXIT_TIMEOUT_HELPER"
+	waitForTimeoutHelperEnv  = "STRIDER_WAITFOR_TIMEOUT_HELPER"
+	waitExitTimeoutHelperEnv = "STRIDER_WAITEXIT_TIMEOUT_HELPER"
 )
 
 func TestMain(m *testing.M) {
 	// Build the test fixture binary.
-	dir, err := os.MkdirTemp("", "crawler-testbin-*")
+	dir, err := os.MkdirTemp("", "strider-testbin-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
 		os.Exit(1)
@@ -43,38 +43,38 @@ func TestMain(m *testing.M) {
 }
 
 func TestOpenAndCleanup(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 }
 
 func TestTypeAndEcho(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("hello world")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: hello world"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: hello world"))
 }
 
 func TestPressKeys(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("test")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: test"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: test"))
 }
 
 func TestWaitForSuccess(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 }
 
 func TestWaitForTimeout(t *testing.T) {
 	if os.Getenv(waitForTimeoutHelperEnv) == "1" {
-		term := crawler.Open(t, testBinary)
-		term.WaitFor(crawler.Text("ready>"))
-		term.WaitFor(crawler.Text("never appears"), crawler.WithinTimeout(150*time.Millisecond))
+		term := strider.Open(t, testBinary)
+		term.WaitFor(strider.Text("ready>"))
+		term.WaitFor(strider.Text("never appears"), strider.WithinTimeout(150*time.Millisecond))
 		return
 	}
 
@@ -90,7 +90,7 @@ func TestWaitForTimeout(t *testing.T) {
 	}
 
 	output := string(out)
-	if !strings.Contains(output, "crawler: wait-for: timed out") {
+	if !strings.Contains(output, "strider: wait-for: timed out") {
 		t.Fatalf("expected timeout message, got:\n%s", output)
 	}
 	if !strings.Contains(output, "recent screen captures (oldest to newest):") {
@@ -102,8 +102,8 @@ func TestWaitForTimeout(t *testing.T) {
 }
 
 func TestWaitForScreen(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	screen := term.WaitForScreen(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	screen := term.WaitForScreen(strider.Text("ready>"))
 
 	if !screen.Contains("ready>") {
 		t.Errorf("expected screen to contain 'ready>', got:\n%s", screen)
@@ -111,8 +111,8 @@ func TestWaitForScreen(t *testing.T) {
 }
 
 func TestScreenContains(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	screen := term.Screen()
 	if !screen.Contains("ready>") {
@@ -124,8 +124,8 @@ func TestScreenContains(t *testing.T) {
 }
 
 func TestScreenString(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	screen := term.Screen()
 	s := screen.String()
@@ -135,8 +135,8 @@ func TestScreenString(t *testing.T) {
 }
 
 func TestScreenLines(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	screen := term.Screen()
 	lines := screen.Lines()
@@ -158,8 +158,8 @@ func TestScreenLines(t *testing.T) {
 }
 
 func TestScreenLine(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	screen := term.Screen()
 	line := screen.Line(0)
@@ -169,8 +169,8 @@ func TestScreenLine(t *testing.T) {
 }
 
 func TestScreenSize(t *testing.T) {
-	term := crawler.Open(t, testBinary, crawler.WithSize(100, 30))
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary, strider.WithSize(100, 30))
+	term.WaitFor(strider.Text("ready>"))
 
 	screen := term.Screen()
 	w, h := screen.Size()
@@ -180,84 +180,84 @@ func TestScreenSize(t *testing.T) {
 }
 
 func TestTextMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 }
 
 func TestRegexpMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Regexp(`ready>`))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Regexp(`ready>`))
 }
 
 func TestLineMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("hello")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: hello"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: hello"))
 
-	term.WaitFor(crawler.Line(1, "echo: hello"))
+	term.WaitFor(strider.Line(1, "echo: hello"))
 }
 
 func TestLineContainsMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("world")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.LineContains(1, "world"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.LineContains(1, "world"))
 }
 
 func TestNotMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Not(crawler.Text("nonexistent string")))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Not(strider.Text("nonexistent string")))
 }
 
 func TestAllMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.All(
-		crawler.Text("ready>"),
-		crawler.Not(crawler.Text("nonexistent")),
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.All(
+		strider.Text("ready>"),
+		strider.Not(strider.Text("nonexistent")),
 	))
 }
 
 func TestAnyMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Any(
-		crawler.Text("nonexistent"),
-		crawler.Text("ready>"),
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Any(
+		strider.Text("nonexistent"),
+		strider.Text("ready>"),
 	))
 }
 
 func TestEmptyMatcher(t *testing.T) {
 	// A screen with content should not be empty.
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
-	term.WaitFor(crawler.Not(crawler.Empty()))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
+	term.WaitFor(strider.Not(strider.Empty()))
 }
 
 func TestWaitExit(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("quit")
-	term.Press(crawler.Enter)
+	term.Press(strider.Enter)
 
-	code := term.WaitExit(crawler.WithinTimeout(10 * time.Second))
+	code := term.WaitExit(strider.WithinTimeout(10 * time.Second))
 	if code != 0 {
 		t.Errorf("expected exit code 0, got %d", code)
 	}
 }
 
 func TestWaitExitNonZero(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	term.Type("fail")
-	term.Press(crawler.Enter)
+	term.Press(strider.Enter)
 
-	code := term.WaitExit(crawler.WithinTimeout(10 * time.Second))
+	code := term.WaitExit(strider.WithinTimeout(10 * time.Second))
 	if code != 1 {
 		t.Errorf("expected exit code 1, got %d", code)
 	}
@@ -265,9 +265,9 @@ func TestWaitExitNonZero(t *testing.T) {
 
 func TestWaitExitTimeout(t *testing.T) {
 	if os.Getenv(waitExitTimeoutHelperEnv) == "1" {
-		term := crawler.Open(t, testBinary)
-		term.WaitFor(crawler.Text("ready>"))
-		_ = term.WaitExit(crawler.WithinTimeout(150 * time.Millisecond))
+		term := strider.Open(t, testBinary)
+		term.WaitFor(strider.Text("ready>"))
+		_ = term.WaitExit(strider.WithinTimeout(150 * time.Millisecond))
 		return
 	}
 
@@ -283,7 +283,7 @@ func TestWaitExitTimeout(t *testing.T) {
 	}
 
 	output := string(out)
-	if !strings.Contains(output, "crawler: wait-exit: timed out") {
+	if !strings.Contains(output, "strider: wait-exit: timed out") {
 		t.Fatalf("expected wait-exit timeout message, got:\n%s", output)
 	}
 	if !strings.Contains(output, "recent screen captures (oldest to newest):") {
@@ -292,31 +292,31 @@ func TestWaitExitTimeout(t *testing.T) {
 }
 
 func TestResize(t *testing.T) {
-	term := crawler.Open(t, testBinary, crawler.WithSize(80, 24))
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary, strider.WithSize(80, 24))
+	term.WaitFor(strider.Text("ready>"))
 
 	// Ask testbin to report size before resize.
 	term.Type("size")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("size: 80x24"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("size: 80x24"))
 
 	// Resize.
 	term.Resize(120, 40)
 
 	// Ask for size again.
 	term.Type("size")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("size: 120x40"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("size: 120x40"))
 }
 
 func TestScrollback(t *testing.T) {
-	term := crawler.Open(t, testBinary, crawler.WithSize(80, 10))
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary, strider.WithSize(80, 10))
+	term.WaitFor(strider.Text("ready>"))
 
 	// Generate enough lines to overflow the visible area.
 	term.Type("lines 20")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("ready>"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("ready>"))
 
 	// Poll until scrollback contains both early and late lines.
 	deadline := time.Now().Add(2 * time.Second)
@@ -335,52 +335,52 @@ func TestScrollback(t *testing.T) {
 
 func TestWithEnv(t *testing.T) {
 	// Use testbin with env var and verify it through command output.
-	term := crawler.Open(t, "/bin/sh",
-		crawler.WithArgs("-c", "echo $CRAWLER_TEST_VAR && read line"),
-		crawler.WithEnv("CRAWLER_TEST_VAR=hello_from_env"),
+	term := strider.Open(t, "/bin/sh",
+		strider.WithArgs("-c", "echo $STRIDER_TEST_VAR && read line"),
+		strider.WithEnv("STRIDER_TEST_VAR=hello_from_env"),
 	)
-	term.WaitFor(crawler.Text("hello_from_env"))
+	term.WaitFor(strider.Text("hello_from_env"))
 }
 
 func TestWithDir(t *testing.T) {
 	// WithDir sets the working directory.
-	term := crawler.Open(t, "/bin/sh",
-		crawler.WithArgs("-c", "pwd && read line"),
-		crawler.WithDir(os.TempDir()),
+	term := strider.Open(t, "/bin/sh",
+		strider.WithArgs("-c", "pwd && read line"),
+		strider.WithDir(os.TempDir()),
 	)
 	// The output should contain a path.
-	term.WaitFor(crawler.Regexp(`/`))
+	term.WaitFor(strider.Regexp(`/`))
 }
 
 func TestWithTimeout(t *testing.T) {
-	term := crawler.Open(t, testBinary, crawler.WithTimeout(10*time.Second))
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary, strider.WithTimeout(10*time.Second))
+	term.WaitFor(strider.Text("ready>"))
 }
 
 func TestWithPollInterval(t *testing.T) {
-	term := crawler.Open(t, testBinary, crawler.WithPollInterval(100*time.Millisecond))
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary, strider.WithPollInterval(100*time.Millisecond))
+	term.WaitFor(strider.Text("ready>"))
 }
 
 func TestCtrlC(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
-	term.Press(crawler.Ctrl('c'))
+	term.Press(strider.Ctrl('c'))
 	// Ctrl-C sends SIGINT; the process exits with a signal-based code.
-	code := term.WaitExit(crawler.WithinTimeout(10 * time.Second))
+	code := term.WaitExit(strider.WithinTimeout(10 * time.Second))
 	// Accept any non-zero exit code (SIGINT typically yields 130 or 2).
 	_ = code
 }
 
 func TestMatchSnapshotUpdate(t *testing.T) {
-	// Only run snapshot update test when CRAWLER_UPDATE is set.
-	if os.Getenv("CRAWLER_UPDATE") != "1" {
-		t.Skip("skipping snapshot update test (set CRAWLER_UPDATE=1)")
+	// Only run snapshot update test when STRIDER_UPDATE is set.
+	if os.Getenv("STRIDER_UPDATE") != "1" {
+		t.Skip("skipping snapshot update test (set STRIDER_UPDATE=1)")
 	}
 
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 	term.MatchSnapshot("ready-screen")
 }
 
@@ -389,13 +389,13 @@ func TestParallelSubtests(t *testing.T) {
 		i := i
 		t.Run(fmt.Sprintf("subtest-%d", i), func(t *testing.T) {
 			t.Parallel()
-			term := crawler.Open(t, testBinary)
-			term.WaitFor(crawler.Text("ready>"))
+			term := strider.Open(t, testBinary)
+			term.WaitFor(strider.Text("ready>"))
 
 			msg := fmt.Sprintf("parallel-%d", i)
 			term.Type(msg)
-			term.Press(crawler.Enter)
-			term.WaitFor(crawler.Text("echo: " + msg))
+			term.Press(strider.Enter)
+			term.WaitFor(strider.Text("echo: " + msg))
 		})
 	}
 }
@@ -407,13 +407,13 @@ func TestStressParallel(t *testing.T) {
 		i := i
 		t.Run(fmt.Sprintf("stress-%d", i), func(t *testing.T) {
 			t.Parallel()
-			term := crawler.Open(t, testBinary)
-			term.WaitFor(crawler.Text("ready>"))
+			term := strider.Open(t, testBinary)
+			term.WaitFor(strider.Text("ready>"))
 
 			msg := fmt.Sprintf("stress-msg-%d", i)
 			term.Type(msg)
-			term.Press(crawler.Enter)
-			term.WaitFor(crawler.Text("echo: " + msg))
+			term.Press(strider.Enter)
+			term.WaitFor(strider.Text("echo: " + msg))
 
 			// Verify the screen contains our message, not another test's.
 			screen := term.Screen()
@@ -425,49 +425,49 @@ func TestStressParallel(t *testing.T) {
 }
 
 func TestCursorMatcher(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
-	term.WaitFor(crawler.Cursor(0, 6))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
+	term.WaitFor(strider.Cursor(0, 6))
 }
 
 func TestSendKeys(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	// Use raw SendKeys to send literal text.
 	term.SendKeys("h", "i")
-	term.WaitFor(crawler.Text("hi"))
+	term.WaitFor(strider.Text("hi"))
 }
 
 func TestMultipleCommands(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	// First command.
 	term.Type("first")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: first"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: first"))
 
 	// Second command.
 	term.Type("second")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: second"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: second"))
 
 	// Third command.
 	term.Type("third")
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: third"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: third"))
 }
 
 func TestBackspace(t *testing.T) {
-	term := crawler.Open(t, testBinary)
-	term.WaitFor(crawler.Text("ready>"))
+	term := strider.Open(t, testBinary)
+	term.WaitFor(strider.Text("ready>"))
 
 	// Type text, use backspace to correct, then press Enter.
 	// The terminal line discipline handles backspace.
 	term.Type("helloo")
-	term.Press(crawler.Backspace)
+	term.Press(strider.Backspace)
 	// After backspace, "hello" remains. Type more and send.
-	term.Press(crawler.Enter)
-	term.WaitFor(crawler.Text("echo: hello"))
+	term.Press(strider.Enter)
+	term.WaitFor(strider.Text("echo: hello"))
 }

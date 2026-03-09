@@ -3,8 +3,8 @@
 Debugging test failures, fixing common problems, and setting up CI.
 
 For API overview and usage examples, see the [README](../README.md). For
-detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/crawler)
-or run `go doc github.com/cboone/crawler`.
+detailed function signatures, see the [package documentation on pkg.go.dev](https://pkg.go.dev/github.com/cboone/strider)
+or run `go doc github.com/cboone/strider`.
 
 ## tmux not found
 
@@ -12,7 +12,7 @@ If tmux is not installed, tests **skip** automatically (they don't fail):
 
 ```
 --- SKIP: TestMyApp (0.00s)
-    crawler: open: tmux not found
+    strider: open: tmux not found
 ```
 
 Install tmux:
@@ -27,7 +27,7 @@ brew install tmux
 
 ## tmux version too old
 
-crawler requires tmux 3.0+. Check your version:
+strider requires tmux 3.0+. Check your version:
 
 ```sh
 tmux -V
@@ -38,15 +38,15 @@ test **skips**:
 
 ```
 --- SKIP: TestMyApp (0.00s)
-    crawler: open: tmux version 2.9 is below minimum 3.0
+    strider: open: tmux version 2.9 is below minimum 3.0
 ```
 
 If the tmux path is explicitly configured via `WithTmuxPath` or the
-`CRAWLER_TMUX` environment variable, the test **fails** instead of skipping:
+`STRIDER_TMUX` environment variable, the test **fails** instead of skipping:
 
 ```
 --- FAIL: TestMyApp (0.00s)
-    crawler: open: tmux version 2.9 is below minimum 3.0
+    strider: open: tmux version 2.9 is below minimum 3.0
 ```
 
 The distinction: auto-detected tmux is treated as optional (skip), but
@@ -57,20 +57,20 @@ explicitly configured tmux is treated as a requirement (fail).
 The tmux binary is resolved in this order:
 
 1. `WithTmuxPath("/path/to/tmux")` -- highest priority
-2. `CRAWLER_TMUX` environment variable
+2. `STRIDER_TMUX` environment variable
 3. PATH lookup (standard `exec.LookPath`)
 
 This is useful when you have multiple tmux versions installed or need to test
 against a specific build:
 
 ```go
-term := crawler.Open(t, "./my-app",
-    crawler.WithTmuxPath("/usr/local/bin/tmux-3.4"),
+term := strider.Open(t, "./my-app",
+    strider.WithTmuxPath("/usr/local/bin/tmux-3.4"),
 )
 ```
 
 ```sh
-CRAWLER_TMUX=/opt/tmux/bin/tmux go test ./...
+STRIDER_TMUX=/opt/tmux/bin/tmux go test ./...
 ```
 
 ## WaitFor timeout failures
@@ -78,7 +78,7 @@ CRAWLER_TMUX=/opt/tmux/bin/tmux go test ./...
 A timeout looks like this:
 
 ```
-app_test.go:15: crawler: wait-for: timed out after 5s
+app_test.go:15: strider: wait-for: timed out after 5s
     waiting for: screen to contain "Welcome"
     recent screen captures (oldest to newest):
     capture 1/3:
@@ -108,16 +108,16 @@ app_test.go:15: crawler: wait-for: timed out after 5s
 1. **Increase the timeout** for a specific call:
 
    ```go
-   term.WaitFor(crawler.Text("Done"), crawler.WithinTimeout(30*time.Second))
+   term.WaitFor(strider.Text("Done"), strider.WithinTimeout(30*time.Second))
    ```
 
 2. **Add intermediate WaitFor steps** to narrow down where the failure
    happens:
 
    ```go
-   term.WaitFor(crawler.Text("Loading..."))    // does this pass?
-   term.WaitFor(crawler.Text("Processing...")) // what about this?
-   term.WaitFor(crawler.Text("Done"))          // fails here?
+   term.WaitFor(strider.Text("Loading..."))    // does this pass?
+   term.WaitFor(strider.Text("Processing...")) // what about this?
+   term.WaitFor(strider.Text("Done"))          // fails here?
    ```
 
 3. **Check the screen manually** to see what the program is actually showing:
@@ -130,7 +130,7 @@ app_test.go:15: crawler: wait-for: timed out after 5s
 4. **Use Regexp** for flexible matching when exact text varies:
 
    ```go
-   term.WaitFor(crawler.Regexp(`(?i)welcome`))
+   term.WaitFor(strider.Regexp(`(?i)welcome`))
    ```
 
 ## Process exited unexpectedly
@@ -138,7 +138,7 @@ app_test.go:15: crawler: wait-for: timed out after 5s
 This error means the TUI process terminated before the matcher succeeded:
 
 ```
-crawler: wait-for: process exited unexpectedly (status 1)
+strider: wait-for: process exited unexpectedly (status 1)
     waiting for: screen to contain "Welcome"
     recent screen captures (oldest to newest):
     ...
@@ -162,7 +162,7 @@ The process crashed or exited before rendering the expected content. Check:
   ```go
   // BAD: race condition
   term.Type("hello")
-  term.Press(crawler.Enter)
+  term.Press(strider.Enter)
   screen := term.Screen()
   if !screen.Contains("echo: hello") { // might fail intermittently
       t.Fatal("missing echo")
@@ -170,8 +170,8 @@ The process crashed or exited before rendering the expected content. Check:
 
   // GOOD: deterministic
   term.Type("hello")
-  term.Press(crawler.Enter)
-  term.WaitFor(crawler.Text("echo: hello"))
+  term.Press(strider.Enter)
+  term.WaitFor(strider.Text("echo: hello"))
   ```
 
 - **SIGWINCH timing after Resize**: after calling `Resize`, the program needs
@@ -187,7 +187,7 @@ The process crashed or exited before rendering the expected content. Check:
 ## Socket path length
 
 Unix domain sockets have a path length limit (104 bytes on macOS, 108 on
-Linux). crawler handles this by:
+Linux). strider handles this by:
 
 - Sanitizing the test name: only `[A-Za-z0-9.-]` are kept, everything else
   becomes `_`.
@@ -250,7 +250,7 @@ Key points:
 
 - tmux is installed as a separate step before running tests.
 - macOS runners sometimes have tmux pre-installed, so the step checks first.
-- Do **not** set `CRAWLER_UPDATE=1` in CI.
+- Do **not** set `STRIDER_UPDATE=1` in CI.
 
 ## CI with other providers
 
@@ -280,7 +280,7 @@ go test -run ^TestSpecificCase$ -v
 ### Test with a specific tmux binary
 
 ```sh
-CRAWLER_TMUX=/path/to/tmux go test -run TestMyApp -v
+STRIDER_TMUX=/path/to/tmux go test -run TestMyApp -v
 ```
 
 ### Inspect screen content during development
@@ -300,4 +300,4 @@ t.Logf("screen size: %dx%d", w, h)
 - [Getting started](GETTING-STARTED.md) -- first-test tutorial
 - [Matchers in depth](MATCHERS.md) -- matchers and custom matchers
 - [Recipes and patterns](PATTERNS.md) -- common testing scenarios
-- [Architecture](ARCHITECTURE.md) -- how crawler works internally
+- [Architecture](ARCHITECTURE.md) -- how strider works internally

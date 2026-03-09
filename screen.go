@@ -1,4 +1,4 @@
-package crawler
+package strider
 
 import (
 	"strings"

@@ -1,6 +1,6 @@
-// Package crawler provides black-box testing for terminal user interfaces.
+// Package strider provides black-box testing for terminal user interfaces.
 //
-// crawler runs a real binary inside an isolated tmux server, sends keystrokes,
+// strider runs a real binary inside an isolated tmux server, sends keystrokes,
 // captures screen output, and performs assertions through the standard
 // [testing.TB] interface. It is framework-agnostic and works with any program
 // that renders in a terminal.
@@ -8,11 +8,11 @@
 // # Quick Start
 //
 //	func TestMyApp(t *testing.T) {
-//		term := crawler.Open(t, "./my-app")
-//		term.WaitFor(crawler.Text("Welcome"))
+//		term := strider.Open(t, "./my-app")
+//		term.WaitFor(strider.Text("Welcome"))
 //		term.Type("hello")
-//		term.Press(crawler.Enter)
-//		term.WaitFor(crawler.Text("hello"))
+//		term.Press(strider.Enter)
+//		term.WaitFor(strider.Text("hello"))
 //	}
 //
 // Cleanup is automatic through t.Cleanup; there is no Close method.
@@ -22,7 +22,7 @@
 // [Open] creates a dedicated tmux server for each test, using a unique socket
 // path under os.TempDir. This gives subtests and parallel tests full isolation.
 //
-// Internally, crawler starts tmux with a temporary config file that enables:
+// Internally, strider starts tmux with a temporary config file that enables:
 //
 //   - remain-on-exit on
 //   - status off
@@ -58,7 +58,7 @@
 // # Snapshots
 //
 // [Terminal.MatchSnapshot] and [Screen.MatchSnapshot] compare screen content to
-// golden files under testdata. Set CRAWLER_UPDATE=1 to create or update golden
+// golden files under testdata. Set STRIDER_UPDATE=1 to create or update golden
 // files.
 //
 // Snapshot content is normalized for stable diffs by trimming trailing spaces,
@@ -66,7 +66,7 @@
 //
 // # Diagnostics
 //
-// On wait failures, crawler reports:
+// On wait failures, strider reports:
 //
 //   - expected matcher description
 //   - timeout or exit details
@@ -83,6 +83,6 @@
 // tmux is resolved in this order:
 //
 //   - [WithTmuxPath]
-//   - CRAWLER_TMUX
+//   - STRIDER_TMUX
 //   - PATH lookup for tmux
-package crawler
+package strider

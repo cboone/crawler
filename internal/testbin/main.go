@@ -1,4 +1,4 @@
-// Command testbin is a minimal TUI fixture program for testing the crawler
+// Command testbin is a minimal TUI fixture program for testing the strider
 // library. It reads stdin line by line and responds to commands.
 //
 // Behavior:

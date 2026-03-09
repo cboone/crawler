@@ -1,5 +1,5 @@
 // Package tmuxcli provides low-level tmux command execution and socket-path
-// management. It is internal to the crawler package.
+// management. It is internal to the strider package.
 package tmuxcli
 
 import (

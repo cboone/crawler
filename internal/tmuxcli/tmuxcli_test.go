@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cboone/crawler/internal/tmuxcli"
+	"github.com/cboone/strider/internal/tmuxcli"
 )
 
 func findTmux(t *testing.T) string {

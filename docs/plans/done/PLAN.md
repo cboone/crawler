@@ -1,4 +1,4 @@
-# crawler — Playwright for TUIs via tmux
+# strider — Playwright for TUIs via tmux
 
 A Go testing library for black-box testing of terminal user interfaces.
 Tests run real binaries inside tmux sessions, send keystrokes, capture screen
@@ -14,14 +14,14 @@ output, and assert against it — all through the standard `testing.TB` interfac
    table-driven tests, `t.Helper()`, `t.Cleanup()`. No DSLs.
 3. **Reliable**: Deterministic waits instead of `time.Sleep`. Automatic retry
    with timeouts, like Playwright's auto-waiting locators.
-4. **Snapshot testing**: Golden-file screen captures with `CRAWLER_UPDATE=1`.
+4. **Snapshot testing**: Golden-file screen captures with `STRIDER_UPDATE=1`.
 5. **Simple internals**: Shell out to the `tmux` CLI. No cgo, no terminfo
    parsing, no terminal emulator reimplementation.
 
 ## Non-goals
 
 - Replacing unit-test tools like teatest or tcell's SimulationScreen.
-  crawler is for integration/end-to-end testing of compiled binaries.
+  strider is for integration/end-to-end testing of compiled binaries.
 - Windows support. tmux is Unix-only; that is an accepted constraint.
 - Parsing or understanding ANSI escape sequences or styled output.
   Screen content is plain text as returned by `tmux capture-pane -p`.
@@ -42,8 +42,8 @@ output, and assert against it — all through the standard `testing.TB` interfac
   Go test process
   ┌──────────────────────────────────────────────┐
   │  func TestFoo(t *testing.T) {                │
-  │      term := crawler.Open(t, …)              │──── tmux -S <socket-path> new-session -d …
-  │      term.WaitFor(crawler.Text("hello"))     │──── tmux -S <socket-path> capture-pane -p
+  │      term := strider.Open(t, …)              │──── tmux -S <socket-path> new-session -d …
+  │      term.WaitFor(strider.Text("hello"))     │──── tmux -S <socket-path> capture-pane -p
   │      term.SendKeys("world")                  │──── tmux -S <socket-path> send-keys …
   │      term.Screen().Match(…)                  │──── tmux -S <socket-path> capture-pane -p
   │  }                                           │
@@ -85,11 +85,11 @@ decades. We get that for free with `capture-pane`.
 ## Package structure
 
 ```
-crawler/
-├── go.mod                  # module github.com/cboone/crawler
+strider/
+├── go.mod                  # module github.com/cboone/strider
 ├── go.sum
-├── crawler.go              # Terminal type, Open(), core API
-├── crawler_test.go         # Tests for the library itself
+├── strider.go              # Terminal type, Open(), core API
+├── strider_test.go         # Tests for the library itself
 ├── options.go              # Option type and functional options
 ├── screen.go               # Screen type (captured pane content)
 ├── keys.go                 # Key constants and SendKeys helpers
@@ -108,10 +108,10 @@ crawler/
     └── ...
 ```
 
-Single package: `crawler`. Users import one thing:
+Single package: `strider`. Users import one thing:
 
 ```go
-import "github.com/cboone/crawler"
+import "github.com/cboone/strider"
 ```
 
 ---
@@ -191,8 +191,8 @@ Basic usage:
 
 ```go
 func TestMyApp(t *testing.T) {
-    term := crawler.Open(t, "path/to/binary",
-        crawler.WithArgs("arg1", "arg2"),
+    term := strider.Open(t, "path/to/binary",
+        strider.WithArgs("arg1", "arg2"),
     )
 }
 ```
@@ -200,13 +200,13 @@ func TestMyApp(t *testing.T) {
 With more options:
 
 ```go
-term := crawler.Open(t, "./my-app",
-    crawler.WithArgs("--verbose"),
-    crawler.WithSize(120, 40),
-    crawler.WithEnv("NO_COLOR=1", "TERM=xterm-256color"),
-    crawler.WithDir("/tmp/workdir"),
-    crawler.WithTimeout(10 * time.Second),
-    crawler.WithTmuxPath("/opt/homebrew/bin/tmux"),
+term := strider.Open(t, "./my-app",
+    strider.WithArgs("--verbose"),
+    strider.WithSize(120, 40),
+    strider.WithEnv("NO_COLOR=1", "TERM=xterm-256color"),
+    strider.WithDir("/tmp/workdir"),
+    strider.WithTimeout(10 * time.Second),
+    strider.WithTmuxPath("/opt/homebrew/bin/tmux"),
 )
 ```
 
@@ -215,11 +215,11 @@ They do not replace it. This matches `exec.Cmd.Env` semantics when
 combined with `os.Environ()`.
 
 `WithTmuxPath` allows specifying a non-standard tmux binary location.
-Defaults to `"tmux"` (resolved via `$PATH`). The `CRAWLER_TMUX`
+Defaults to `"tmux"` (resolved via `$PATH`). The `STRIDER_TMUX`
 environment variable can also be used as a fallback before the default.
 
 **Implementation**: `Open` generates a unique socket path (for example,
-`<tmp>/crawler-<sanitized-test>-<random>.sock`) and calls
+`<tmp>/strider-<sanitized-test>-<random>.sock`) and calls
 `tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args...>`,
 waits for the session to be ready, and registers a `t.Cleanup` that calls
 `tmux -S <socket-path> kill-server`.
@@ -248,12 +248,12 @@ func (term *Terminal) SendKeys(keys ...string)
 Usage:
 
 ```go
-term := crawler.Open(t, "./my-app")
+term := strider.Open(t, "./my-app")
 term.Type("hello world")
-term.Press(crawler.Enter)
-term.Press(crawler.Ctrl('c'))
-term.Press(crawler.Tab, crawler.Tab, crawler.Enter)
-term.Press(crawler.Up, crawler.Up, crawler.Down)
+term.Press(strider.Enter)
+term.Press(strider.Ctrl('c'))
+term.Press(strider.Tab, strider.Tab, strider.Enter)
+term.Press(strider.Up, strider.Up, strider.Down)
 ```
 
 **Key constants** follow Go naming conventions:
@@ -371,22 +371,22 @@ Usage:
 
 ```go
 // Wait for text to appear
-term.WaitFor(crawler.Text("Loading complete"))
+term.WaitFor(strider.Text("Loading complete"))
 
 // Wait with a longer timeout
-term.WaitFor(crawler.Text("Done"), crawler.WithinTimeout(30*time.Second))
+term.WaitFor(strider.Text("Done"), strider.WithinTimeout(30*time.Second))
 
 // Wait for a regex
-term.WaitFor(crawler.Regexp(`\d+ items loaded`))
+term.WaitFor(strider.Regexp(`\d+ items loaded`))
 
 // Wait for text on a specific line
-term.WaitFor(crawler.LineContains(0, "My App v1.0"))
+term.WaitFor(strider.LineContains(0, "My App v1.0"))
 
 // Wait for text to disappear
-term.WaitFor(crawler.Not(crawler.Text("Loading...")))
+term.WaitFor(strider.Not(strider.Text("Loading...")))
 
 // Capture the matching screen
-screen := term.WaitForScreen(crawler.Text("Results"))
+screen := term.WaitForScreen(strider.Text("Results"))
 ```
 
 **Failure output** is designed to be immediately useful:
@@ -444,7 +444,7 @@ func Cursor(row, col int) Matcher
 // MatchSnapshot compares the current screen against a golden file
 // stored in testdata/<sanitized-test-name>/<sanitized-name>.txt.
 //
-// Set CRAWLER_UPDATE=1 to create or update golden files.
+// Set STRIDER_UPDATE=1 to create or update golden files.
 func (term *Terminal) MatchSnapshot(name string)
 
 // MatchSnapshot on Screen allows snapshotting a previously captured screen.
@@ -455,8 +455,8 @@ Usage:
 
 ```go
 func TestWelcomeScreen(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
-    term.WaitFor(crawler.Text("Welcome"))
+    term := strider.Open(t, "./my-app")
+    term.WaitFor(strider.Text("Welcome"))
     term.MatchSnapshot("welcome")
     // Compares against testdata/TestWelcomeScreen-1a2b3c4d/welcome.txt
 }
@@ -472,10 +472,10 @@ Snapshot paths are sanitized to avoid collisions and invalid paths:
 - Whitespace becomes `_`; characters outside `[A-Za-z0-9._-]` become `_`.
 - Snapshot `name` is sanitized with the same character rules.
 
-**Updating golden files**: Set the `CRAWLER_UPDATE` environment variable:
+**Updating golden files**: Set the `STRIDER_UPDATE` environment variable:
 
 ```sh
-CRAWLER_UPDATE=1 go test ./...
+STRIDER_UPDATE=1 go test ./...
 ```
 
 This avoids requiring users to write a `TestMain` just to register a flag
@@ -487,20 +487,20 @@ For longer interaction sequences, a step-based helper avoids repetition:
 
 ```go
 func TestFormFilling(t *testing.T) {
-    term := crawler.Open(t, "./my-app")
+    term := strider.Open(t, "./my-app")
 
-    term.WaitFor(crawler.Text("Name:"))
+    term.WaitFor(strider.Text("Name:"))
     term.Type("Alice")
-    term.Press(crawler.Tab)
+    term.Press(strider.Tab)
 
-    term.WaitFor(crawler.Text("Email:"))
+    term.WaitFor(strider.Text("Email:"))
     term.Type("alice@example.com")
-    term.Press(crawler.Tab)
+    term.Press(strider.Tab)
 
-    term.WaitFor(crawler.Text("Submit"))
-    term.Press(crawler.Enter)
+    term.WaitFor(strider.Text("Submit"))
+    term.Press(strider.Enter)
 
-    term.WaitFor(crawler.Text("Success"))
+    term.WaitFor(strider.Text("Success"))
     term.MatchSnapshot("form-submitted")
 }
 ```
@@ -513,19 +513,19 @@ The API composes naturally with Go subtests:
 func TestNavigation(t *testing.T) {
     tests := []struct {
         name string
-        key  crawler.Key
+        key  strider.Key
         want string
     }{
-        {"down moves to second item", crawler.Down, "> Item 2"},
-        {"up moves to first item", crawler.Up, "> Item 1"},
+        {"down moves to second item", strider.Down, "> Item 2"},
+        {"up moves to first item", strider.Up, "> Item 1"},
     }
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            term := crawler.Open(t, "./my-list-app")
-            term.WaitFor(crawler.Text("> Item 1"))
+            term := strider.Open(t, "./my-list-app")
+            term.WaitFor(strider.Text("> Item 1"))
             term.Press(tt.key)
-            term.WaitFor(crawler.Text(tt.want))
+            term.WaitFor(strider.Text(tt.want))
         })
     }
 }
@@ -543,7 +543,7 @@ Each subtest gets its own tmux session, so they are fully independent.
 1. **Open**: Generate a unique, filesystem-safe socket path. Derive a
    sanitized test identifier from the test name (for example, by replacing
    characters such as `/` with `_`) to form
-   `<tmp>/crawler-<sanitized-test>-<random>.sock`.
+   `<tmp>/strider-<sanitized-test>-<random>.sock`.
    Run `tmux -S <socket-path> new-session -d -x <w> -y <h> -- <binary> <args>`.
    Poll `tmux -S <socket-path> list-panes` until the session is ready
    (typically near-instant). Record the pane ID.
@@ -563,7 +563,7 @@ follows the pattern of `httptest.NewServer` and similar test helpers.
 Error format is standardized across the package:
 
 ```text
-crawler: <operation>: <reason>
+strider: <operation>: <reason>
 command: <tmux-path> <args...>
 stderr: <tmux stderr, if any>
 ```
@@ -574,7 +574,7 @@ stderr: <tmux stderr, if any>
 Process lifecycle semantics are explicit:
 
 - `Screen`, `Type`, `Press`, `SendKeys`, and `Resize` fail immediately if the
-  pane is dead: `crawler: <operation>: process exited unexpectedly (status N)`.
+  pane is dead: `strider: <operation>: process exited unexpectedly (status N)`.
 - `WaitFor` and `WaitForScreen` fail immediately if the pane dies before the
   matcher succeeds.
 - `WaitExit` returns immediately if the process is already dead when called.
@@ -662,7 +662,7 @@ All of the following pass:
 ### Phase 2: Matchers and snapshots
 
 - [x] `Line`, `LineContains`, `Not`, `All`, `Any`, `Empty` matchers
-- [x] `MatchSnapshot` with golden file creation and `CRAWLER_UPDATE` env var
+- [x] `MatchSnapshot` with golden file creation and `STRIDER_UPDATE` env var
 - [x] `Resize`
 - [x] `WaitExit` (process exit)
 - [x] `WaitForScreen` (return the matching screen; trivial wrapper over `WaitFor`)
@@ -707,17 +707,17 @@ Tests for the library verify:
 
 **Runtime**: `tmux` 3.0+ must be installed on the system (not a Go dependency).
 The tmux binary is located by checking, in order: `WithTmuxPath` option,
-`CRAWLER_TMUX` environment variable, then `$PATH` lookup.
+`STRIDER_TMUX` environment variable, then `$PATH` lookup.
 
 Dependency policy:
 
 - If no explicit tmux path is configured and tmux is not in `$PATH`, call
-  `t.Skip("crawler: open: tmux not found")`.
-- If `WithTmuxPath` or `CRAWLER_TMUX` is set but invalid or not executable,
+  `t.Skip("strider: open: tmux not found")`.
+- If `WithTmuxPath` or `STRIDER_TMUX` is set but invalid or not executable,
   call `t.Fatal` (explicit configuration error).
 - If tmux is found via `$PATH` but version is below 3.0, call `t.Skip` with
   the detected version and required minimum (environment limitation).
-- If tmux is found via `WithTmuxPath` or `CRAWLER_TMUX` but version is below
+- If tmux is found via `WithTmuxPath` or `STRIDER_TMUX` but version is below
   3.0, call `t.Fatal` (explicit configuration error: unsupported tmux).
 
 **Go module dependencies**: Ideally zero. The standard library provides
@@ -727,7 +727,7 @@ everything needed:
 - `testing` — test integration
 - `time` — polling and timeouts
 - `crypto/rand` or `math/rand` — unique socket path suffixes
-- `path/filepath`, `os` — golden file management, `CRAWLER_UPDATE` env var
+- `path/filepath`, `os` — golden file management, `STRIDER_UPDATE` env var
 
 No third-party dependencies means no version conflicts for users.
 
@@ -742,12 +742,12 @@ No third-party dependencies means no version conflicts for users.
 | `tui-test` (Microsoft) | TypeScript | xterm.js emulator | Any binary, but JS |
 | `VHS` (Charm) | Go | Tape DSL → recording | Demo/docs, not testing |
 | `go-expect` / `goexpect` | Go | PTY + expect patterns | Line-oriented, not TUI |
-| **crawler** | **Go** | **tmux** | **Any binary, native Go tests** |
+| **strider** | **Go** | **tmux** | **Any binary, native Go tests** |
 
-crawler's niche: **the only Go-native, framework-agnostic, TUI-aware testing
+strider's niche: **the only Go-native, framework-agnostic, TUI-aware testing
 library**. PTY-based expect libraries work for line-oriented CLI programs but
 can't reliably capture full-screen TUI state. Framework-specific tools only
-work with one framework. crawler works with anything that runs in a terminal.
+work with one framework. strider works with anything that runs in a terminal.
 
 ---
 
@@ -767,6 +767,6 @@ work with one framework. crawler works with anything that runs in a terminal.
 4. **tmux minimum version**: 3.0+ (released November 2019). Covers all needed
    features. Checked at runtime in `Open` via `tmux -V`.
 
-5. **Module path**: `github.com/cboone/crawler`. The name is fine — the
+5. **Module path**: `github.com/cboone/strider`. The name is fine — the
    package doc and README provide context. A vanity import path can be added
    later if desired.

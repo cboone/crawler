@@ -1,4 +1,4 @@
-package crawler
+package strider
 
 import (
 	"crypto/rand"
@@ -12,14 +12,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cboone/crawler/internal/tmuxcli"
+	"github.com/cboone/strider/internal/tmuxcli"
 )
 
 const minTmuxVersion = "3.0"
 
 // resolveTmuxPath determines the tmux binary path by checking, in order:
 // 1. WithTmuxPath option
-// 2. CRAWLER_TMUX environment variable
+// 2. STRIDER_TMUX environment variable
 // 3. $PATH lookup
 //
 // Returns the resolved path and whether it was explicitly configured.
@@ -30,13 +30,13 @@ func resolveTmuxPath(t testing.TB, configured string) (path string, explicit boo
 		return configured, true
 	}
 
-	if envPath := os.Getenv("CRAWLER_TMUX"); envPath != "" {
+	if envPath := os.Getenv("STRIDER_TMUX"); envPath != "" {
 		return envPath, true
 	}
 
 	found, err := exec.LookPath("tmux")
 	if err != nil {
-		t.Skip("crawler: open: tmux not found")
+		t.Skip("strider: open: tmux not found")
 	}
 	return found, false
 }
@@ -48,13 +48,13 @@ func checkTmuxVersion(t testing.TB, tmuxPath string, explicit bool) {
 	version, err := tmuxcli.Version(tmuxPath)
 	if err != nil {
 		if explicit {
-			t.Fatalf("crawler: open: %v", err)
+			t.Fatalf("strider: open: %v", err)
 		}
-		t.Skipf("crawler: open: %v", err)
+		t.Skipf("strider: open: %v", err)
 	}
 
 	if !versionAtLeast(version, minTmuxVersion) {
-		msg := fmt.Sprintf("crawler: open: tmux version %s is below minimum %s", version, minTmuxVersion)
+		msg := fmt.Sprintf("strider: open: tmux version %s is below minimum %s", version, minTmuxVersion)
 		if explicit {
 			t.Fatal(msg)
 		}
@@ -98,11 +98,11 @@ func generateSocketPath(t testing.TB) string {
 	// Generate random suffix.
 	b := make([]byte, 4)
 	if _, err := rand.Read(b); err != nil {
-		t.Fatalf("crawler: open: failed to generate random bytes: %v", err)
+		t.Fatalf("strider: open: failed to generate random bytes: %v", err)
 	}
 	suffix := hex.EncodeToString(b)
 
-	name := fmt.Sprintf("crawler-%s-%s.sock", sanitized, suffix)
+	name := fmt.Sprintf("strider-%s-%s.sock", sanitized, suffix)
 	path := filepath.Join(os.TempDir(), name)
 
 	// Handle collision: if file exists, regenerate.
@@ -114,18 +114,18 @@ func generateSocketPath(t testing.TB) string {
 		if err != nil {
 			// Non-existence check failed for a reason other than the file
 			// not existing (e.g., permission denied). Surface the real error.
-			t.Fatalf("crawler: open: failed to check socket path: %v", err)
+			t.Fatalf("strider: open: failed to check socket path: %v", err)
 		}
 		if _, err := rand.Read(b); err != nil {
-			t.Fatalf("crawler: open: failed to generate random bytes: %v", err)
+			t.Fatalf("strider: open: failed to generate random bytes: %v", err)
 		}
 		suffix = hex.EncodeToString(b)
-		name = fmt.Sprintf("crawler-%s-%s.sock", sanitized, suffix)
+		name = fmt.Sprintf("strider-%s-%s.sock", sanitized, suffix)
 		path = filepath.Join(os.TempDir(), name)
 	}
 
 	// Extremely unlikely: 10 collisions in a row.
-	t.Fatalf("crawler: open: could not generate unique socket path after 10 attempts")
+	t.Fatalf("strider: open: could not generate unique socket path after 10 attempts")
 	return ""
 }
 
@@ -157,7 +157,7 @@ func writeConfig(configPath string, opts options) error {
 
 	config := fmt.Sprintf("set-option -g history-limit %d\nset-option -g remain-on-exit on\nset-option -g status off\n", histLimit)
 	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
-		return fmt.Errorf("crawler: open: failed to write tmux config: %w", err)
+		return fmt.Errorf("strider: open: failed to write tmux config: %w", err)
 	}
 	return nil
 }
@@ -180,7 +180,7 @@ func startSession(runner *tmuxcli.Runner, binary string, opts options) error {
 	args = append(args, opts.args...)
 
 	if _, err := runner.Run(args...); err != nil {
-		return fmt.Errorf("crawler: open: failed to start tmux session: %w", err)
+		return fmt.Errorf("strider: open: failed to start tmux session: %w", err)
 	}
 
 	return nil
